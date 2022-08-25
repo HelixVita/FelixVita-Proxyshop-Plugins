@@ -117,6 +117,15 @@ class AncientTemplate (temp.NormalClassicTemplate):
     template_suffix = "Ancient"
 
     def __init__(self, layout):
+        # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
+        if layout.set.upper() == "ICE":
+            layout.symbol = ""
+        # Use bold rules text for the 3 Portal sets + S99:
+        if layout.set.upper() in ["POR", "P02", "PTK", "S99"]:
+            con.font_rules_text = "MPlantin-Bold"
+        # Right-justify citations in flavor text for all sets starting with Mirage
+        if layout.set.upper() not in pre_mirage_sets:
+            con.align_classic_quote = True
         super().__init__(layout)
 
     def enable_frame_layers(self):
