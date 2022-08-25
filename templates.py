@@ -128,6 +128,60 @@ class AncientTemplate (temp.NormalClassicTemplate):
             con.align_classic_quote = True
         super().__init__(layout)
 
+    def collector_info(self):
+        setcode = self.layout.set.upper()
+        color = self.layout.background
+        legal_layer = psd.getLayerSet(con.layers['LEGAL'])
+
+        # TODO: Uncomment this block when switching from normal-classic.psd to ancient.psd
+        # if setcode in pre_exodus_sets or setcode in ["P02", "PTK"]:
+        #     # Hide set & artist layers; and reveal left-justified ones
+        #     psd.getLayer(con.layers['SET'], legal_layer).visible = False
+        #     psd.getLayer(con.layers['ARTIST'], legal_layer).visible = False
+        #     legal_layer = psd.getLayerSet("Left-Justified", con.layers['LEGAL'])
+        #     legal_layer.visible = True
+
+        # Artist layer & set/copyright/collector info layer
+        collector_layer = psd.getLayer(con.layers['SET'], legal_layer)
+        artist_layer = psd.getLayer(con.layers['ARTIST'], legal_layer)
+        # Color the artist info gray for old cards
+        if setcode in pre_legends_sets:
+            artist_layer.textItem.color = psd.get_rgb(186, 186, 186)  # Gray
+        # Replace "Illus. Artist" with "Illus. <Artist Name>"
+        psd.replace_text(artist_layer, "Artist", self.layout.artist)
+        # Select the collector info layer:
+        app.activeDocument.activeLayer = collector_layer
+        # Make the collector's info text black instead of white if the following conditions are met:
+        if (
+            (color == "W") or
+            (color == "U" and setcode in pre_hml_sets) or
+            (color == "R" and setcode in pre_mmq_sets) or
+            (color == "Land" and setcode in sets_with_black_copyright_for_lands) or
+            (setcode in pre_legends_sets)  # Pre-legends coll must be black, because grey is ugly/illegible and white looks weird when all the other legal text is gray.
+            ):
+            collector_layer.textItem.color = psd.rgb_black()
+            psd.apply_stroke(collector_layer, 1, psd.rgb_black())
+        else:
+            psd.apply_stroke(collector_layer, 1, psd.get_rgb(238, 238, 238))  # White (#EEEEEE)
+
+        # Fill in detailed collector info if available ("SET • 999/999 C" --> "ABC • 043/150 R")
+        collector_layer.visible = True
+        # Try to obtain release year
+        try:
+            release_year = self.layout.scryfall['released_at'][:4]
+        except:
+            release_year = None
+        # Conditionally build up the collector info string (leaving out any unavailable info)
+        collector_string = ""
+        collector_string += "Proxy • Not for Sale — "
+        collector_string += f"{self.layout.set} • "
+        collector_string += f"{release_year} • " if release_year else ""
+        collector_string += str(self.layout.collector_number).lstrip("0")
+        collector_string += "/" + str(self.layout.card_count).lstrip("0") if self.layout.card_count else ""
+        collector_string += f" {self.layout.rarity_letter}" if self.layout.rarity else ""
+        # Apply the collector info
+        collector_layer.textItem.contents = collector_string
+
     def enable_frame_layers(self):
         super().enable_frame_layers()
 
