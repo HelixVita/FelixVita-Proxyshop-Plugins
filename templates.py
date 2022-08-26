@@ -121,7 +121,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
         if layout.set.upper() == "ICE":
             layout.symbol = ""
-        # Use bold rules text for the 3 Portal sets + S99:
+        # Use bold rules text and flavor divider for the three Portal sets (and S99):
         if layout.set.upper() in ["POR", "P02", "PTK", "S99"]:
             con.font_rules_text = "MPlantin-Bold"
         else: cfg.flavor_divider = False
@@ -134,14 +134,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
         setcode = self.layout.set.upper()
         color = self.layout.background
         legal_layer = psd.getLayerSet(con.layers['LEGAL'])
-
-        # TODO: Uncomment this block when switching from normal-classic.psd to ancient.psd
-        # if setcode in pre_exodus_sets or setcode in ["P02", "PTK"]:
-        #     # Hide set & artist layers; and reveal left-justified ones
-        #     psd.getLayer(con.layers['SET'], legal_layer).visible = False
-        #     psd.getLayer(con.layers['ARTIST'], legal_layer).visible = False
-        #     legal_layer = psd.getLayerSet("Left-Justified", con.layers['LEGAL'])
-        #     legal_layer.visible = True
 
         # Artist layer & set/copyright/collector info layer
         collector_layer = psd.getLayer(con.layers['SET'], legal_layer)
@@ -189,13 +181,14 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def post_text_layers(self):
         super().post_text_layers()
-        # Left-align artist and collector's info
-        reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
-        artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
-        collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
-        artist_delta = reference.bounds[0] - artist.bounds[0]
-        collector_delta = reference.bounds[0] - collector.bounds[0]
-        artist.translate(artist_delta, 0)
-        collector.translate(collector_delta, 0)
+        if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
+            # Left-align artist and collector's info
+            reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
+            artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
+            collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
+            artist_delta = reference.bounds[0] - artist.bounds[0]
+            collector_delta = reference.bounds[0] - collector.bounds[0]
+            artist.translate(artist_delta, 0)
+            collector.translate(collector_delta, 0)
 
 
