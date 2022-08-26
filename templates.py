@@ -117,6 +117,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
     template_suffix = "Ancient"
 
     def __init__(self, layout):
+        super().__init__(layout)
         # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
         if layout.set.upper() == "ICE":
             layout.symbol = ""
@@ -126,7 +127,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Right-justify citations in flavor text for all sets starting with Mirage
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
-        super().__init__(layout)
+
 
     def collector_info(self):
         setcode = self.layout.set.upper()
