@@ -124,6 +124,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Use bold rules text for the 3 Portal sets + S99:
         if layout.set.upper() in ["POR", "P02", "PTK", "S99"]:
             con.font_rules_text = "MPlantin-Bold"
+        else: cfg.flavor_divider = False
         # Right-justify citations in flavor text for all sets starting with Mirage
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
