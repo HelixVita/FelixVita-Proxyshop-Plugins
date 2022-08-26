@@ -187,4 +187,15 @@ class AncientTemplate (temp.NormalClassicTemplate):
     def enable_frame_layers(self):
         super().enable_frame_layers()
 
+    def post_text_layers(self):
+        super().post_text_layers()
+        # Left-align artist and collector's info
+        reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
+        artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
+        collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
+        artist_delta = reference.bounds[0] - artist.bounds[0]
+        collector_delta = reference.bounds[0] - collector.bounds[0]
+        artist.translate(artist_delta, 0)
+        collector.translate(collector_delta, 0)
+
 
