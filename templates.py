@@ -113,7 +113,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
     """
     FelixVita's template
     """
-    template_file_name = "normal-classic.psd"
+    template_file_name = "FelixVita/ancient.psd"
     template_suffix = "Ancient"
 
     def __init__(self, layout):
