@@ -133,14 +133,26 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
         if layout.set.upper() == "ICE":
             layout.symbol = ""
-        # Use bold rules text and flavor divider for the three Portal sets (and S99):
+        # For Portal sets, use bold rules text and flavor divider:
         if layout.set.upper() in ["POR", "P02", "PTK", "S99"]:
             con.font_rules_text = "MPlantin-Bold"
         else: cfg.flavor_divider = False
         # Right-justify citations in flavor text for all sets starting with Mirage
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
-
+        # Ensure consistent data type for expansion symbol formatting config (from symbols.json)
+        if isinstance(layout.symbol, str):
+            layout.symbol = [{'char': layout.symbol}]
+        # These will be the default symbol stroke & fill for all sets rendered with this template
+        layout.symbol[0]['stroke'] = ['white', 8]
+        layout.symbol[0]['common-stroke'] = ['white', 8]
+        layout.symbol[0]['fill'] = 'white'
+        layout.symbol[0]['common-fill'] = 'white'
+        # For PTK symbol, use thicker stroke and slightly smaller set symbol
+        if layout.set.upper() == "PTK":
+            layout.symbol[0]['stroke'] = ['white', 15]
+            layout.symbol[0]['common-stroke'] = ['white', 15]
+            # layout.symbol[0]['size-modifier'] = 0.9
 
     def collector_info(self):
         setcode = self.layout.set.upper()
@@ -377,5 +389,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
             collector_delta = reference.bounds[0] - collector.bounds[0]
             artist.translate(artist_delta, 0)
             collector.translate(collector_delta, 0)
+            # For PTK symbol, apply thin black outer stroke
+            if self.layout.set.upper() == "PTK":
+                expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
+                psd.apply_stroke(expansion_reference, 4, psd.rgb_black())
+
 
 
