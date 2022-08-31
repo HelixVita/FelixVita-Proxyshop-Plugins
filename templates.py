@@ -152,7 +152,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if layout.set.upper() == "PTK":
             layout.symbol[0]['stroke'] = ['white', 15]
             layout.symbol[0]['common-stroke'] = ['white', 15]
-            # layout.symbol[0]['size-modifier'] = 0.9
+            self.resize_symbol(0.6)
 
     def collector_info(self):
         setcode = self.layout.set.upper()
@@ -378,21 +378,33 @@ class AncientTemplate (temp.NormalClassicTemplate):
         text_and_icons = psd.getLayerSet(con.layers['TEXT_AND_ICONS'])
         self.basic_text_layers(text_and_icons)
 
+    def left_align_artist_and_collector(self):
+        """ Left-align the artist and collector info """
+        reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
+        artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
+        collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
+        artist_delta = reference.bounds[0] - artist.bounds[0]
+        collector_delta = reference.bounds[0] - collector.bounds[0]
+        artist.translate(artist_delta, 0)
+        collector.translate(collector_delta, 0)
+
+    def resize_symbol(self, size_modifier):
+        """ Resize the expansion symbol by resizing the expansion reference layer """
+        size_modifier = size_modifier * 100
+        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
+        expansion_reference.resize(size_modifier, size_modifier, ps.AnchorPosition.MiddleCenter)
+
     def post_text_layers(self):
         super().post_text_layers()
+
         if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
-            # Left-align artist and collector's info
-            reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
-            artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
-            collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
-            artist_delta = reference.bounds[0] - artist.bounds[0]
-            collector_delta = reference.bounds[0] - collector.bounds[0]
-            artist.translate(artist_delta, 0)
-            collector.translate(collector_delta, 0)
-            # For PTK symbol, apply thin black outer stroke
-            if self.layout.set.upper() == "PTK":
-                expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
-                psd.apply_stroke(expansion_reference, 4, psd.rgb_black())
+            self.left_align_artist_and_collector()
+
+        # For PTK symbol, apply an additional thin black outer stroke
+        expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
+        if self.layout.set.upper() == "PTK": psd.apply_stroke(expansion_symbol, 4, psd.rgb_black())
+
+        # print("Breakpoint for debug here")
 
 
 
