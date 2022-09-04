@@ -221,10 +221,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
             svg_symbol.translate(0,-2)
         if self.layout.set.upper() == "ALL":
-            print('breakpoint here')
-        #     svg_symbol.translate(0,5)
-        #     scale = 0.85
-        #     svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleCenter)
+            svg_symbol.translate(-90,8)
 
     def collector_info(self):
         setcode = self.layout.set.upper()
