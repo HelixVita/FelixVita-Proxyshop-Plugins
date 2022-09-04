@@ -7,6 +7,7 @@ from proxyshop.settings import cfg
 import proxyshop.helpers as psd
 import photoshop.api as ps
 app = ps.Application()
+from pathlib import Path
 
 list_of_all_mtg_sets = list(con.set_symbols.keys())
 
@@ -130,6 +131,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def __init__(self, layout):
         super().__init__(layout)
+        if layout.set.upper() in sets_without_set_symbol:
+            self.expansion_disabled = True
         # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
         if layout.set.upper() == "ICE":
             layout.symbol = ""
@@ -140,19 +143,75 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Right-justify citations in flavor text for all sets starting with Mirage
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
-        # Ensure consistent data type for expansion symbol formatting config (from symbols.json)
-        if isinstance(layout.symbol, str):
-            layout.symbol = [{'char': layout.symbol}]
-        # These will be the default symbol stroke & fill for all sets rendered with this template
-        layout.symbol[0]['stroke'] = ['white', 8]
-        layout.symbol[0]['common-stroke'] = ['white', 8]
-        layout.symbol[0]['fill'] = 'white'
-        layout.symbol[0]['common-fill'] = 'white'
-        # For PTK symbol, use thicker stroke and slightly smaller set symbol
-        if layout.set.upper() == "PTK":
-            layout.symbol[0]['stroke'] = ['white', 15]
-            layout.symbol[0]['common-stroke'] = ['white', 15]
-            self.resize_symbol(0.6)
+
+        # # Ensure consistent data type for expansion symbol formatting config (from symbols.json)
+        # if isinstance(layout.symbol, str):
+        #     layout.symbol = [{'char': layout.symbol}]
+        # # These will be the default symbol stroke & fill for all sets rendered with this template
+        # layout.symbol[0]['stroke'] = ['white', 8]
+        # layout.symbol[0]['common-stroke'] = ['white', 8]
+        # layout.symbol[0]['fill'] = 'white'
+        # layout.symbol[0]['common-fill'] = 'white'
+        # # For PTK symbol, use thicker stroke and slightly smaller set symbol
+        # if layout.set.upper() == "PTK":
+        #     layout.symbol[0]['stroke'] = ['white', 15]
+        #     layout.symbol[0]['common-stroke'] = ['white', 15]
+            # self.resize_symbol(0.6)
+        # print("Debug breakpoint here")
+
+    def resize_symbol(size_modifier):
+        """ Resize the expansion symbol by resizing the expansion reference layer """
+        size_modifier = size_modifier * 100
+        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
+        expansion_reference.resize(size_modifier, size_modifier, ps.AnchorPosition.MiddleCenter)
+        expansion_reference.visible = False
+
+    def basic_text_layers(self, text_and_icons):
+        use_ccghq_set_symbols = True  # TODO: Make this a config option
+        if not use_ccghq_set_symbols:
+            super().basic_text_layers(text_and_icons)
+        else:
+            self.expansion_disabled = True
+            psd.getLayer(con.layers['EXPANSION_SYMBOL'], text_and_icons).visible = False
+            super().basic_text_layers(text_and_icons)
+            self.load_symbol_svg()
+            self.tweak_symbol_svg()
+
+    def tweak_symbol_svg(self):
+        svg_symbol = psd.getLayer('New Layer', con.layers['TEXT_AND_ICONS'])
+        if self.layout.set.upper() == "PTK":
+            svg_symbol.translate(35,-5)
+            scale = 0.85
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleCenter)
+            psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
+            psd.rasterize_layer_style(svg_symbol)
+            psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
+
+    def load_symbol_svg(self, commons_pre_exodus=True):
+        # Get rarity
+        ccghq_rarity_abbreviations = {
+            "Common": "C",
+            "Uncommon": "U",
+            "Rare": "R",
+            "Mythic Rare": "M",
+            "Special": "S",
+            "Basic Land": "L",
+            "Timeshifted": "T",
+            "Masterpiece": "M",
+        }
+        svg_rarity = ccghq_rarity_abbreviations[self.layout.rarity.title()]
+        # Don't use rarity colors on set symbol for cards from pre-exodus sets
+        if commons_pre_exodus and self.layout.set.upper() in pre_exodus_sets:
+            svg_rarity = "C"
+        # Load custom set symbol SVG
+        symbols_dirpath = Path("templates", "CCGHQ", "Magic the Gathering Vectors", "Set symbols")
+        svg_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + ".svg")
+        # Select the "Card Name" layer so that the new set symbol layer is created next to it
+        app.activeDocument.activeLayer = psd.getLayer(con.layers['NAME'], con.layers['TEXT_AND_ICONS'])
+        set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))
+        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
+        psd.frame_layer(set_symbol_layer, expansion_reference, smallest=True)
+        print("Debug breakpoint here")
 
     def collector_info(self):
         setcode = self.layout.set.upper()
@@ -199,6 +258,19 @@ class AncientTemplate (temp.NormalClassicTemplate):
         collector_string += f" {self.layout.rarity_letter}" if self.layout.rarity else ""
         # Apply the collector info
         collector_layer.textItem.contents = collector_string
+        # Left-align the collector info for old cards
+        if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
+            self.left_align_artist_and_collector()
+
+    def left_align_artist_and_collector(self):
+        """ Left-align the artist and collector info """
+        reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
+        artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
+        collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
+        artist_delta = reference.bounds[0] - artist.bounds[0]
+        collector_delta = reference.bounds[0] - collector.bounds[0]
+        artist.translate(artist_delta, 0)
+        collector.translate(collector_delta, 0)
 
     def enable_frame_layers(self):
         # Variables
@@ -378,33 +450,9 @@ class AncientTemplate (temp.NormalClassicTemplate):
         text_and_icons = psd.getLayerSet(con.layers['TEXT_AND_ICONS'])
         self.basic_text_layers(text_and_icons)
 
-    def left_align_artist_and_collector(self):
-        """ Left-align the artist and collector info """
-        reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
-        artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
-        collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
-        artist_delta = reference.bounds[0] - artist.bounds[0]
-        collector_delta = reference.bounds[0] - collector.bounds[0]
-        artist.translate(artist_delta, 0)
-        collector.translate(collector_delta, 0)
 
-    def resize_symbol(self, size_modifier):
-        """ Resize the expansion symbol by resizing the expansion reference layer """
-        size_modifier = size_modifier * 100
-        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
-        expansion_reference.resize(size_modifier, size_modifier, ps.AnchorPosition.MiddleCenter)
+
 
     def post_text_layers(self):
         super().post_text_layers()
-
-        if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
-            self.left_align_artist_and_collector()
-
-        # For PTK symbol, apply an additional thin black outer stroke
-        expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
-        if self.layout.set.upper() == "PTK": psd.apply_stroke(expansion_symbol, 4, psd.rgb_black())
-
-        # print("Breakpoint for debug here")
-
-
-
+        print("Breakpoint for debug here")
