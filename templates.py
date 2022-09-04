@@ -159,11 +159,11 @@ class AncientTemplate (temp.NormalClassicTemplate):
             # self.resize_symbol(0.6)
         # print("Debug breakpoint here")
 
-    def resize_symbol(size_modifier):
+    def resize_expref(size_modifier):
         """ Resize the expansion symbol by resizing the expansion reference layer """
         size_modifier = size_modifier * 100
         expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
-        expansion_reference.resize(size_modifier, size_modifier, ps.AnchorPosition.MiddleCenter)
+        expansion_reference.resize(size_modifier, size_modifier, ps.AnchorPosition.MiddleRight)
         expansion_reference.visible = False
 
     def basic_text_layers(self, text_and_icons):
@@ -172,20 +172,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
             super().basic_text_layers(text_and_icons)
         else:
             self.expansion_disabled = True
-            psd.getLayer(con.layers['EXPANSION_SYMBOL'], text_and_icons).visible = False
+            psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS']).visible = False
             super().basic_text_layers(text_and_icons)
             self.load_symbol_svg()
-            self.tweak_symbol_svg()
-
-    def tweak_symbol_svg(self):
-        svg_symbol = psd.getLayer('New Layer', con.layers['TEXT_AND_ICONS'])
-        if self.layout.set.upper() == "PTK":
-            svg_symbol.translate(35,-5)
-            scale = 0.85
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleCenter)
-            psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
-            psd.rasterize_layer_style(svg_symbol)
-            psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
+            self.appy_set_specific_symbol_adjustments()
 
     def load_symbol_svg(self, commons_pre_exodus=True):
         # Get rarity
@@ -206,12 +196,35 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Load custom set symbol SVG
         symbols_dirpath = Path("templates", "CCGHQ", "Magic the Gathering Vectors", "Set symbols")
         svg_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + ".svg")
+        if svg_rarity == "C":
+            svg_c_original_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + " - Original.svg")
+            if svg_c_original_path.is_file():
+                svg_path = svg_c_original_path
         # Select the "Card Name" layer so that the new set symbol layer is created next to it
         app.activeDocument.activeLayer = psd.getLayer(con.layers['NAME'], con.layers['TEXT_AND_ICONS'])
         set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))
         expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
-        psd.frame_layer(set_symbol_layer, expansion_reference, smallest=True)
+        # Resize and position the set symbol
+        psd.frame_layer(set_symbol_layer, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=False, align_v=True)
+        psd.align("AdRg", set_symbol_layer, expansion_reference)
+        # font_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
+        # psd.frame_layer(font_symbol, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=True, align_v=True)
         print("Debug breakpoint here")
+
+    def appy_set_specific_symbol_adjustments(self):
+        svg_symbol = psd.getLayer('New Layer', con.layers['TEXT_AND_ICONS'])
+        if self.layout.set.upper() == "PTK":
+            psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
+            psd.rasterize_layer_style(svg_symbol)
+            psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
+            scale = 0.9
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+            svg_symbol.translate(0,-2)
+        if self.layout.set.upper() == "ALL":
+            print('breakpoint here')
+        #     svg_symbol.translate(0,5)
+        #     scale = 0.85
+        #     svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleCenter)
 
     def collector_info(self):
         setcode = self.layout.set.upper()
