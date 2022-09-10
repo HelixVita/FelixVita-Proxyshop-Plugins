@@ -8,6 +8,7 @@ import proxyshop.helpers as psd
 import photoshop.api as ps
 app = ps.Application()
 from pathlib import Path
+from proxyshop.text_layers import ExpansionSymbolField  # For type hinting
 
 list_of_all_mtg_sets = list(con.set_symbols.keys())
 
@@ -109,6 +110,7 @@ original_dual_lands = [
 
 all_keyrune_pre_eighth_symbols_for_debugging = ""
 
+# TODO: Get rid of this "unhide" function, as it's no longer needed (now that psd.getLayer has this functionality).
 def unhide(psdpath: tuple, is_group=False):
     # Example: psdpath = ("RW", "ABUR Duals (ME4)", "Land")
     revpath = list(reversed(psdpath))
@@ -144,6 +146,13 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
 
+        self.frame_style = "CardConRemastered-97"
+        if layout.set.upper() in pre_mirage_sets:
+            if self.is_land:
+                self.frame_style = "Mock-93"
+            else:
+                self.frame_style = "Real-93" # TODO: Make this a user config option
+
         # # Ensure consistent data type for expansion symbol formatting config (from symbols.json)
         # if isinstance(layout.symbol, str):
         #     layout.symbol = [{'char': layout.symbol}]
@@ -167,15 +176,41 @@ class AncientTemplate (temp.NormalClassicTemplate):
         expansion_reference.visible = False
 
     def basic_text_layers(self, text_and_icons):
-        use_ccghq_set_symbols = True  # TODO: Make this a config option
-        if not use_ccghq_set_symbols:
-            super().basic_text_layers(text_and_icons)
-        else:
-            self.expansion_disabled = True
-            psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS']).visible = False
-            super().basic_text_layers(text_and_icons)
-            self.load_symbol_svg()
-            self.appy_set_specific_symbol_adjustments()
+        if self.frame_style == "Real-93":
+            rtext = psd.getLayer("Rules Text", con.layers['TEXT_AND_ICONS'])
+            tref = psd.getLayer("Textbox Reference", con.layers['TEXT_AND_ICONS'])
+            tref.resize(95, 100, ps.AnchorPosition.MiddleCenter)
+            rtext.textItem.width = 110
+            psd.align_horizontal(rtext, tref); psd.clear_selection()
+            tref.visible = False
+
+        use_ccghq_set_symbols = False  # TODO: Make this a config option
+        ccghq_compatible_sets = ['PTK', 'ALL']  # TODO: Move this to top of file
+        if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
+            expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
+            if self.layout.set.upper() not in ccghq_compatible_sets:
+                use_ccghq_set_symbols = False
+            if use_ccghq_set_symbols:
+                self.expansion_disabled = True
+                expansion_symbol.visible = False
+                super().basic_text_layers(text_and_icons)
+                set_symbol_layer = self.load_symbol_svg()
+                self.frame_set_symbol_layer(set_symbol_layer)
+                self.apply_set_specific_svg_symbol_adjustments(set_symbol_layer)
+            else:
+                super().basic_text_layers(text_and_icons)
+                # self.frame_set_symbol_layer(expansion_symbol)
+                # self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
+
+    def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
+        if self.layout.set.upper() == "ATQ":
+            expansion_symbol.resize(112, 112)
+            expansion_symbol.translate(-200, -20)
+            self.skip_symbol_formatting()
+
+    def skip_symbol_formatting(self):
+        """ Skip the default Proxyshop symbol formatting (stroke, fill, etc.) """
+        self.tx_layers = [_ for _ in self.tx_layers if not isinstance(_, ExpansionSymbolField)]
 
     def load_symbol_svg(self, commons_pre_exodus=True):
         # Get rarity
@@ -203,16 +238,18 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Select the "Card Name" layer so that the new set symbol layer is created next to it
         app.activeDocument.activeLayer = psd.getLayer(con.layers['NAME'], con.layers['TEXT_AND_ICONS'])
         set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))
-        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
+        return set_symbol_layer
+
+    def frame_set_symbol_layer(self, set_symbol_layer):
         # Resize and position the set symbol
+        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
         psd.frame_layer(set_symbol_layer, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=False, align_v=True)
-        psd.align("AdRg", set_symbol_layer, expansion_reference)
+        psd.align("AdRg", set_symbol_layer, expansion_reference); psd.clear_selection()
         # font_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
         # psd.frame_layer(font_symbol, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=True, align_v=True)
         print("Debug breakpoint here")
 
-    def appy_set_specific_symbol_adjustments(self):
-        svg_symbol = psd.getLayer('New Layer', con.layers['TEXT_AND_ICONS'])
+    def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
         if self.layout.set.upper() == "PTK":
             psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
             psd.rasterize_layer_style(svg_symbol)
@@ -288,66 +325,27 @@ class AncientTemplate (temp.NormalClassicTemplate):
         setcode = self.layout.set.upper()
         cardname = self.layout.scryfall['name']
         # print(f"{cardname=}")
-        # Enable white border if scryfall says card border is white
+
+        # White-border vs. Black-border
         if border_color == 'white':
             psd.getLayer("WhiteBorder").visible = True
+            if self.frame_style == "Real-93":
+                psd.getLayer("If frame is Real-93 and card is white-bordered", ("Nonland", "Misc frame logic")).visible = True  #TODO: Make sure this works.
         elif border_color == 'black':
-            if self.layout.scryfall['colors'] == ["B"]:
-                psd.getLayer("Brighter Left & Bottom Frame Bevels", "Nonland").visible = True
-        # Hide set symbol for any cards from sets LEA, LEB, 2ED, 3ED, 4ED, and 5ED.
-        if setcode in sets_without_set_symbol or setcode == "ALL":
-            text_and_icons = psd.getLayerSet(con.layers['TEXT_AND_ICONS'])
-            psd.getLayerSet("OuterRetroExpansionGroup", text_and_icons).visible = False
-        if setcode in pre_mirage_sets and self.layout.scryfall['colors'] == ["B"]:
-            black_group = psd.getLayerSet("B", "Nonland")
-            psd.getLayer("1993 Style - B Frame Tint Green", black_group).visible = True
-            psd.getLayer("1993 Style - Parchment Black Backdrop", black_group).visible = True
-            psd.getLayer("1993 Style - Parchment Color Balance", black_group).visible = True
-            psd.getLayer("1993 Style - Brightness", black_group).visible = True
-            psd.getLayer("1993 Style - NW Brown Tint", black_group).visible = True
-            psd.getLayer("1993 Style - Browner Edges", black_group).visible = True
-            psd.getLayer("1993 Style - Parchment Hue", black_group).visible = True
-        elif setcode in pre_mirage_sets and self.layout.scryfall['colors'] == ["G"]:
-            green_group = psd.getLayerSet("G", "Nonland")
-            psd.getLayer("Un-1993 Exposure 2", green_group).visible = False
-            psd.getLayer("Un-1993 Color Balance", green_group).visible = False
-            if setcode in pre_fourth_sets:
-                psd.getLayer("Un-1993 Exposure", green_group).visible = False
-                psd.getLayer("Un-1993 Hue", green_group).visible = False
-                psd.getLayer("1993 Style - G Frame Color Balance (Hidden by Default)", green_group).visible = True
-        elif setcode in ["LEA", "LEB"] and self.layout.scryfall['colors'] == ["R"]:
-            red_group = psd.getLayerSet("R", "Nonland")
-            psd.getLayer("LEA-LEB Inner Bevel Sunlight", red_group).visible = True
-            psd.getLayer("LEA-LEB Box Hue", red_group).visible = True
-            psd.getLayer("LEA-LEB Hue", red_group).visible = True
-            psd.getLayer("LEA-LEB Color Balance", red_group).visible = True
-        elif setcode in pre_hml_sets and self.layout.scryfall['colors'] == ["Artifact"]:
-            artifact_group = psd.getLayerSet("Artifact", "Nonland")
-            psd.getLayer("1993 Style - Hue/Saturation", artifact_group).visible = True
-            psd.getLayer("1993 Style - Levels", artifact_group).visible = True
-            psd.getLayer("1993 Style - Levels Overall", artifact_group).visible = True
-        elif setcode in pre_mirage_sets and self.layout.scryfall['colors'] == ["W"]:
-            white_group = psd.getLayerSet("W", "Nonland")
-            psd.getLayer("LEA-LEB - Box Levels", white_group).visible = True
-            psd.getLayer("LEA-LEB - Box Hue/Saturation", white_group).visible = True
-            psd.getLayer("LEA-LEB - Frame Levels", white_group).visible = True
-            psd.getLayer("LEA-LEB - Frame Hue/Saturation", white_group).visible = True
-            psd.getLayer("LEA-LEB - Frame Color Balance", white_group).visible = True
-        elif setcode in pre_mirage_sets and self.layout.scryfall['colors'] == ["U"]:
-            blue_group = psd.getLayerSet("U", "Nonland")
-            psd.getLayer("Rules Bevels - Bright SW (Normal)", blue_group).visible = False
-            psd.getLayer("Rules Bevels - Bright SW (LEA)", blue_group).visible = True
-            # psd.getLayer("LEA-LEB Frame Color Balance", blue_group).visible = True
-            # psd.getLayer("LEA-LEB Frame Levels", blue_group).visible = True
-            # psd.getLayer("LEA-LEB Frame Hue", blue_group).visible = True
-            # psd.getLayer("LEA-LEB Rules Color Balance", blue_group).visible = True
-            psd.getLayer("LEA-LEB Rules Brightness", blue_group).visible = True
-            psd.getLayer("LEA-LEB Rules Levels", blue_group).visible = True
-        elif border_color == 'white' and self.layout.scryfall['colors'] == ["Gold"]:
-            gold_group = psd.getLayerSet("Gold", "Nonland")
-            psd.getLayer("Left & Bottom Bevel Levels", gold_group).visible = False
+            if self.layout.scryfall['colors'] == ["B"] and self.frame_style != "Real-93":
+                psd.getLayer("If card is B and card is black-bordered", ("Nonland", "Misc frame logic")).visible = True  #TODO: Make sure this works.
+
+        # Frame Style: CardConRemastered-97 vs. Mock-93 vs. Real-93
+        if not self.frame_style == "CardConRemastered-97":
+            backgd = psd.getLayerSet(self.layout.background, "Nonland")
+            psd.getLayer("CardConRemastered-97", backgd).visible = False
+            if self.frame_style == "Mock-93":
+                psd.getLayer("Mock-93", backgd).visible = True
+            if self.frame_style == "Real-93":
+                psd.getLayer("Real-93", backgd).visible = True
+
         if "tombstone" in self.layout.frame_effects or "Flashback" in self.layout.keywords:  # TODO: Test the new "tombstone" condition. Is self.layout.frame_effects the right expression? Try a non-flashback card, like Genesis (JUD)
-            unhide(("Tombstone", con.layers['TEXT_AND_ICONS']), is_group=True)
+            psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
 
          # super().enable_frame_layers()
 
@@ -465,4 +463,15 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def post_text_layers(self):
         super().post_text_layers()
+        if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
+            # Use non-bold MPlantin for the Power and Toughness text
+            psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).textItem.font = "MPlantin"
         print("Breakpoint for debug here")
+
+
+# psd.frame_layer(rtext, tref, smallest=True, anchor=ps.AnchorPosition.MiddleCenter, align_h=True, align_v=False)
+# app.activeDocument.activeLayer.resize(70, 100, ps.AnchorPosition.TopCenter)
+# rtext.visible = True
+# tref.visible = True
+
+
