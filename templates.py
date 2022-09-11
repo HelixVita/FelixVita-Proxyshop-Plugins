@@ -484,12 +484,12 @@ class AncientTemplate (temp.NormalClassicTemplate):
     def post_text_layers(self):
         super().post_text_layers()
         if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
-            # Use non-bold MPlantin for the Power and Toughness text  # TODO: Clean this up a bit
-            psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).textItem.font = "MPlantin"
-            psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).textItem.size = 10
-            psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).translate(0, -30)
             if self.layout.power is None and self.layout.toughness is None:
-                psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).visible = False
+                # Use non-bold MPlantin for the Power and Toughness text
+                pt = psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS'])
+                pt.textItem.font = "MPlantin"
+                pt.textItem.size = 10
+                pt.translate(0, -30)
 
             # psd.getLayer("Card Name", "Text and Icons").translate(-100,0)  # Commented out because this would make the cardname overlap with the tombstone icon (which I might want to appear on some pre-mirage cards, even though the tombstone icon was not introduced till later sets)
             # Color the white text grey for old cards
