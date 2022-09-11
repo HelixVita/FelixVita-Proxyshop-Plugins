@@ -184,6 +184,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def basic_text_layers(self, text_and_icons):
         if self.frame_style == "Real-93":
+            # Make the rules text narrower
             rtext = psd.getLayer("Rules Text", con.layers['TEXT_AND_ICONS'])
             tref = psd.getLayer("Textbox Reference", con.layers['TEXT_AND_ICONS'])
             tref.resize(95, 100, ps.AnchorPosition.MiddleCenter)
@@ -195,25 +196,27 @@ class AncientTemplate (temp.NormalClassicTemplate):
         ccghq_compatible_sets = ['PTK', 'ALL']  # TODO: Move this to top of file
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
-            if self.layout.set.upper() not in ccghq_compatible_sets:
-                use_ccghq_set_symbols = False
-            if use_ccghq_set_symbols:
-                self.expansion_disabled = True
+            if self.layout.set.upper() in sets_without_set_symbol:
+                super().basic_text_layers(text_and_icons)
+                self.skip_symbol_formatting()
                 expansion_symbol.visible = False
-                super().basic_text_layers(text_and_icons)
-                set_symbol_layer = self.load_symbol_svg()
-                self.frame_set_symbol_layer(set_symbol_layer)
-                self.apply_set_specific_svg_symbol_adjustments(set_symbol_layer)
             else:
-                super().basic_text_layers(text_and_icons)
-                # self.frame_set_symbol_layer(expansion_symbol)
-                self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
+                if use_ccghq_set_symbols and self.layout.set.upper() in ccghq_compatible_sets:
+                    self.expansion_disabled = True
+                    expansion_symbol.visible = False
+                    super().basic_text_layers(text_and_icons)
+                    set_symbol_layer = self.load_symbol_svg()
+                    self.frame_set_symbol_layer(set_symbol_layer)
+                    self.apply_set_specific_svg_symbol_adjustments(set_symbol_layer)
+                else:
+                    super().basic_text_layers(text_and_icons)
+                    # self.frame_set_symbol_layer(expansion_symbol)
+                    self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
 
     def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
         if self.layout.set.upper() == "ATQ":
             expansion_symbol.resize(112, 112)
             expansion_symbol.translate(-200, -20)
-            self.skip_symbol_formatting()
 
     def skip_symbol_formatting(self):
         """ Skip the default Proxyshop symbol formatting (stroke, fill, etc.) """
@@ -472,21 +475,27 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).textItem.font = "MPlantin"
             psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).textItem.size = 10
             psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).translate(0, -30)
+            # psd.getLayer("Card Name", "Text and Icons").translate(-100,0)  # Commented out because this would make the cardname overlap with the tombstone icon (which I might want to appear on some pre-mirage cards, even though the tombstone icon was not introduced till later sets)
             # Color the white text grey for old cards
             if self.layout.set.upper() in pre_legends_sets:
                 white_text_layers = [
                     psd.getLayer("Card Name", con.layers['TEXT_AND_ICONS']),
                     psd.getLayer("Typeline", con.layers['TEXT_AND_ICONS']),
                     psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']),
-                    psd.getLayer("Artist", con.layers['LEGAL'])
+                    psd.getLayer("Artist", con.layers['LEGAL']),
                 ]
                 for layer in white_text_layers:
-                    layer.textItem.color = psd.get_rgb(186, 186, 186)  # Grey
+                    # layer.textItem.color = psd.get_rgb(186, 186, 186)  # Grey
+                    layer.textItem.color = psd.get_rgb(133, 138, 153)  # Grey Alpha
+                    # psd.hide_style_inner_glow(layer)
                 if self.layout.background == "B":
                     # Turn collector info grey and clear layer style
                     collector_info = psd.getLayer("Set", con.layers['LEGAL'])
-                    collector_info.textItem.color = psd.get_rgb(186, 186, 186)  # Grey
+                    collector_info.textItem.color = psd.get_rgb(133, 138, 153)  # Grey Alpha
                     psd.clear_layer_style(collector_info)
+                    psd.apply_stroke(collector_info, 1, psd.get_rgb(133, 138, 153))
+                if self.layout.background == "R":
+                    psd.getLayer("LEA", ("Nonland", "R", "Real-93")).visible = True
                 if self.layout.set.upper() in ["LEA", "LEB"]:
                     # Reveal "Border with Dots" by hiding the layers obscuring it
                     psd.getLayer("Border").visible = False
