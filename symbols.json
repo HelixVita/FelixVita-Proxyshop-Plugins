@@ -24,7 +24,18 @@
         }
     ],
     "3ED": "",
-    "LEG": "",
+    "LEG": [
+        {
+            "char": "",
+            "rarity": false,
+            "fill": "white",
+            "color": "white",
+            "stroke": false,
+            "common-fill": "white",
+            "common-color": "white",
+            "common-stroke": false
+        }
+    ],
     "DRK": "",
     "FEM": "",
     "4ED": "",
