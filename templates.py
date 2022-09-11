@@ -223,8 +223,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if self.layout.set.upper() == "HML":
             self.skip_symbol_formatting()
             app.activeDocument.activeLayer = expansion_symbol
-            expansion_symbol.resize(115, 115)
-            expansion_symbol.translate(0, 2)
+            # expansion_symbol.resize(105, 105)
+            expansion_symbol.translate(0, -5)
             psd.fill_expansion_symbol(expansion_symbol, psd.get_rgb(186, 186, 186))  # Gray
             expansion_mask = psd.getLayer("Expansion Mask", con.layers['TEXT_AND_ICONS'])
             psd.apply_stroke(expansion_mask, 5, psd.rgb_white())
