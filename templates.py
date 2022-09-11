@@ -9,6 +9,7 @@ import photoshop.api as ps
 app = ps.Application()
 from pathlib import Path
 from proxyshop.text_layers import ExpansionSymbolField  # For type hinting
+import json
 
 list_of_all_mtg_sets = list(con.set_symbols.keys())
 
@@ -132,9 +133,15 @@ class AncientTemplate (temp.NormalClassicTemplate):
     template_suffix = "Ancient"
 
     def __init__(self, layout):
+
+        # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
+        with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
+            con.set_symbols = json.load(js)
+
         super().__init__(layout)
         if layout.set.upper() in sets_without_set_symbol:
-            self.expansion_disabled = True
+            # self.expansion_disabled = True
+            pass
         # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
         if layout.set.upper() == "ICE":
             layout.symbol = ""
@@ -200,7 +207,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             else:
                 super().basic_text_layers(text_and_icons)
                 # self.frame_set_symbol_layer(expansion_symbol)
-                # self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
+                self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
 
     def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
         if self.layout.set.upper() == "ATQ":
@@ -268,9 +275,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Artist layer & set/copyright/collector info layer
         collector_layer = psd.getLayer(con.layers['SET'], legal_layer)
         artist_layer = psd.getLayer(con.layers['ARTIST'], legal_layer)
-        # Color the artist info gray for old cards
-        if setcode in pre_legends_sets:
-            artist_layer.textItem.color = psd.get_rgb(186, 186, 186)  # Gray
         # Replace "Illus. Artist" with "Illus. <Artist Name>"
         psd.replace_text(artist_layer, "Artist", self.layout.artist)
         # Select the collector info layer:
@@ -466,6 +470,27 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
             # Use non-bold MPlantin for the Power and Toughness text
             psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).textItem.font = "MPlantin"
+            psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).textItem.size = 10
+            psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']).translate(0, -30)
+            # Color the white text grey for old cards
+            if self.layout.set.upper() in pre_legends_sets:
+                white_text_layers = [
+                    psd.getLayer("Card Name", con.layers['TEXT_AND_ICONS']),
+                    psd.getLayer("Typeline", con.layers['TEXT_AND_ICONS']),
+                    psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']),
+                    psd.getLayer("Artist", con.layers['LEGAL'])
+                ]
+                for layer in white_text_layers:
+                    layer.textItem.color = psd.get_rgb(186, 186, 186)  # Grey
+                if self.layout.background == "B":
+                    # Turn collector info grey and clear layer style
+                    collector_info = psd.getLayer("Set", con.layers['LEGAL'])
+                    collector_info.textItem.color = psd.get_rgb(186, 186, 186)  # Grey
+                    psd.clear_layer_style(collector_info)
+                if self.layout.set.upper() in ["LEA", "LEB"]:
+                    # Reveal "Border with Dots" by hiding the layers obscuring it
+                    psd.getLayer("Border").visible = False
+                    psd.getLayer("Extended Black Backdrop", "Frame backdrop").visible = False
         print("Breakpoint for debug here")
 
 
