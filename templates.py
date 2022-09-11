@@ -139,9 +139,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
             con.set_symbols = json.load(js)
 
         super().__init__(layout)
-        if layout.set.upper() in sets_without_set_symbol:
-            # self.expansion_disabled = True
-            pass
         # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
         if layout.set.upper() == "ICE":
             layout.symbol = ""
@@ -193,7 +190,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             tref.visible = False
 
         use_ccghq_set_symbols = True  # TODO: Make this a config option
-        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN']  # TODO: Move this to top of file
+        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG']  # TODO: Move this to top of file
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
             if self.layout.set.upper() in sets_without_set_symbol:
@@ -202,9 +199,9 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 expansion_symbol.visible = False
             else:
                 if use_ccghq_set_symbols and self.layout.set.upper() in ccghq_compatible_sets:
-                    self.expansion_disabled = True
-                    expansion_symbol.visible = False
                     super().basic_text_layers(text_and_icons)
+                    self.skip_symbol_formatting()
+                    expansion_symbol.visible = False
                     set_symbol_layer = self.load_symbol_svg()
                     self.frame_set_symbol_layer(set_symbol_layer)
                     self.apply_set_specific_svg_symbol_adjustments(set_symbol_layer)
@@ -217,6 +214,11 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if self.layout.set.upper() == "ATQ":
             expansion_symbol.resize(112, 112)
             expansion_symbol.translate(-200, -20)
+            self.skip_symbol_formatting()
+        if self.layout.set.upper() == "DRK":
+            expansion_symbol.translate(30, 10)
+            self.skip_symbol_formatting()
+
 
     def skip_symbol_formatting(self):
         """ Skip the default Proxyshop symbol formatting (stroke, fill, etc.) """
@@ -269,6 +271,11 @@ class AncientTemplate (temp.NormalClassicTemplate):
             svg_symbol.translate(0,-2)
         if self.layout.set.upper() == "ALL":
             svg_symbol.translate(-90,8)
+        if self.layout.set.upper() == "LEG":
+            scale = 0.9
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+            svg_symbol.translate(30, 10)
+
 
     def collector_info(self):
         setcode = self.layout.set.upper()
@@ -343,7 +350,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 psd.getLayer("If card is B and card is black-bordered", ("Nonland", "Misc frame logic")).visible = True  #TODO: Make sure this works.
 
         # Frame Style: CardConRemastered-97 vs. Mock-93 vs. Real-93
-        if not self.frame_style == "CardConRemastered-97":
+        if not self.frame_style == "CardConRemastered-97" and not self.is_land and not self.layout.background == "Gold":
             backgd = psd.getLayerSet(self.layout.background, "Nonland")
             psd.getLayer("CardConRemastered-97", backgd).visible = False
             if self.frame_style == "Mock-93":
@@ -478,6 +485,9 @@ class AncientTemplate (temp.NormalClassicTemplate):
             # psd.getLayer("Card Name", "Text and Icons").translate(-100,0)  # Commented out because this would make the cardname overlap with the tombstone icon (which I might want to appear on some pre-mirage cards, even though the tombstone icon was not introduced till later sets)
             # Color the white text grey for old cards
             if self.layout.set.upper() in pre_legends_sets:
+                gray = psd.get_rgb(186, 186, 186)  # Gray
+                if self.layout.set.upper() in ['LEA', 'LEB'] or (self.layout.background == "W" and self.layout.set.upper() in ['ARN', 'ATQ']):
+                    gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
                 white_text_layers = [
                     psd.getLayer("Card Name", con.layers['TEXT_AND_ICONS']),
                     psd.getLayer("Typeline", con.layers['TEXT_AND_ICONS']),
@@ -485,22 +495,24 @@ class AncientTemplate (temp.NormalClassicTemplate):
                     psd.getLayer("Artist", con.layers['LEGAL']),
                 ]
                 for layer in white_text_layers:
-                    # layer.textItem.color = psd.get_rgb(186, 186, 186)  # Grey
-                    layer.textItem.color = psd.get_rgb(133, 138, 153)  # Grey Alpha
+                    layer.textItem.color = gray
+                    if self.layout.set.upper() == "ATQ" and self.layout.rarity != "C":
+                        pass  # TODO: Change color of inner glow to orange/yellow
                     # psd.hide_style_inner_glow(layer)
                 if self.layout.background == "B":
                     # Turn collector info grey and clear layer style
                     collector_info = psd.getLayer("Set", con.layers['LEGAL'])
-                    collector_info.textItem.color = psd.get_rgb(133, 138, 153)  # Grey Alpha
+                    collector_info.textItem.color = gray  # Grey Alpha
                     psd.clear_layer_style(collector_info)
-                    psd.apply_stroke(collector_info, 1, psd.get_rgb(133, 138, 153))
+                    psd.apply_stroke(collector_info, 1, gray)
                 if self.layout.set.upper() in ["LEA", "LEB"]:
                     # Reveal "Border with Dots" by hiding the layers obscuring it
                     psd.getLayer("Border").visible = False
                     psd.getLayer("Extended Black Backdrop", "Frame backdrop").visible = False
-                    if self.layout.background == "R":
-                        # Use a slightly more pink version of the red frame
-                        psd.getLayer("LEA", ("Nonland", "R", "Real-93")).visible = True
+                    if self.layout.background in ["W", "R"]:
+                        sback = self.layout.background
+                        # Use a slightly more pink version of the red frame, or softer version of the white frame
+                        psd.getLayer("LEA", ("Nonland", sback, "Real-93")).visible = True
         print("Breakpoint for debug here")
 
 
