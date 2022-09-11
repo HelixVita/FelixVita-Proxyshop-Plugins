@@ -190,7 +190,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             tref.visible = False
 
         use_ccghq_set_symbols = True  # TODO: Make this a config option
-        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM']  # TODO: Move this to top of file
+        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE']  # TODO: Move this to top of file
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
             if self.layout.set.upper() in sets_without_set_symbol:
@@ -281,6 +281,11 @@ class AncientTemplate (temp.NormalClassicTemplate):
             scale = 0.75
             svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
             svg_symbol.translate(23, -15)
+        if self.layout.set.upper() == "ICE":
+            scale = 0.8
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+            svg_symbol.translate(0, -10)
+
 
 
     def collector_info(self):
