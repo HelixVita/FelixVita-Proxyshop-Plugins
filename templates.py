@@ -218,6 +218,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if self.layout.set.upper() == "DRK":
             expansion_symbol.translate(30, 10)
             self.skip_symbol_formatting()
+            if self.layout.background == "B":
+                psd.apply_stroke(expansion_symbol, 2, psd.get_rgb(133, 138, 153))
 
 
     def skip_symbol_formatting(self):
