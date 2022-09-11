@@ -152,7 +152,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
         self.frame_style = "CardConRemastered-97"
         if layout.set.upper() in pre_mirage_sets:
-            if self.is_land:
+            if self.is_land or self.layout.background == "Gold":
                 self.frame_style = "Mock-93"
             else:
                 self.frame_style = "Real-93" # TODO: Make this a user config option
@@ -489,7 +489,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
     def post_text_layers(self):
         super().post_text_layers()
         if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
-            if self.layout.power is None and self.layout.toughness is None:
+            if self.layout.power is not None or self.layout.toughness is not None:
                 # Use non-bold MPlantin for the Power and Toughness text
                 pt = psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS'])
                 pt.textItem.font = "MPlantin"
