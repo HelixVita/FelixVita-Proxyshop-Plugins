@@ -192,8 +192,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.align_horizontal(rtext, tref); psd.clear_selection()
             tref.visible = False
 
-        use_ccghq_set_symbols = False  # TODO: Make this a config option
-        ccghq_compatible_sets = ['PTK', 'ALL']  # TODO: Move this to top of file
+        use_ccghq_set_symbols = True  # TODO: Make this a config option
+        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN']  # TODO: Move this to top of file
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
             if self.layout.set.upper() in sets_without_set_symbol:
@@ -494,12 +494,13 @@ class AncientTemplate (temp.NormalClassicTemplate):
                     collector_info.textItem.color = psd.get_rgb(133, 138, 153)  # Grey Alpha
                     psd.clear_layer_style(collector_info)
                     psd.apply_stroke(collector_info, 1, psd.get_rgb(133, 138, 153))
-                if self.layout.background == "R":
-                    psd.getLayer("LEA", ("Nonland", "R", "Real-93")).visible = True
                 if self.layout.set.upper() in ["LEA", "LEB"]:
                     # Reveal "Border with Dots" by hiding the layers obscuring it
                     psd.getLayer("Border").visible = False
                     psd.getLayer("Extended Black Backdrop", "Frame backdrop").visible = False
+                    if self.layout.background == "R":
+                        # Use a slightly more pink version of the red frame
+                        psd.getLayer("LEA", ("Nonland", "R", "Real-93")).visible = True
         print("Breakpoint for debug here")
 
 
