@@ -220,6 +220,18 @@ class AncientTemplate (temp.NormalClassicTemplate):
             self.skip_symbol_formatting()
             if self.layout.background == "B":
                 psd.apply_stroke(expansion_symbol, 2, psd.get_rgb(133, 138, 153))
+        if self.layout.set.upper() == "HML":
+            self.skip_symbol_formatting()
+            app.activeDocument.activeLayer = expansion_symbol
+            expansion_symbol.resize(115, 115)
+            expansion_symbol.translate(0, 2)
+            psd.fill_expansion_symbol(expansion_symbol, psd.get_rgb(186, 186, 186))  # Gray
+            expansion_mask = psd.getLayer("Expansion Mask", con.layers['TEXT_AND_ICONS'])
+            psd.apply_stroke(expansion_mask, 5, psd.rgb_white())
+        # if self.layout.set.upper() == "HML":
+        #     assert isinstance(self.tx_layers[2], ExpansionSymbolField), "Expected third text layer to be ExpansionSymbolField"
+        #     self.tx_layers[2].rarity = "common"
+
 
 
     def skip_symbol_formatting(self):
@@ -488,6 +500,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def post_text_layers(self):
         super().post_text_layers()
+
+
         if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
             if self.layout.power is not None or self.layout.toughness is not None:
                 # Use non-bold MPlantin for the Power and Toughness text
