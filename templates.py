@@ -8,7 +8,7 @@ import proxyshop.helpers as psd
 import photoshop.api as ps
 app = ps.Application()
 from pathlib import Path
-from proxyshop.text_layers import ExpansionSymbolField  # For type hinting
+from proxyshop.text_layers import ExpansionSymbolField, TextField  # For type hinting
 import json
 
 list_of_all_mtg_sets = list(con.set_symbols.keys())
@@ -157,20 +157,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             else:
                 self.frame_style = "Real-93" # TODO: Make this a user config option
 
-        # # Ensure consistent data type for expansion symbol formatting config (from symbols.json)
-        # if isinstance(layout.symbol, str):
-        #     layout.symbol = [{'char': layout.symbol}]
-        # # These will be the default symbol stroke & fill for all sets rendered with this template
-        # layout.symbol[0]['stroke'] = ['white', 8]
-        # layout.symbol[0]['common-stroke'] = ['white', 8]
-        # layout.symbol[0]['fill'] = 'white'
-        # layout.symbol[0]['common-fill'] = 'white'
-        # # For PTK symbol, use thicker stroke and slightly smaller set symbol
-        # if layout.set.upper() == "PTK":
-        #     layout.symbol[0]['stroke'] = ['white', 15]
-        #     layout.symbol[0]['common-stroke'] = ['white', 15]
-            # self.resize_symbol(0.6)
-        # print("Debug breakpoint here")
+
 
     def resize_expref(size_modifier):
         """ Resize the expansion symbol by resizing the expansion reference layer """
@@ -190,7 +177,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             tref.visible = False
 
         use_ccghq_set_symbols = True  # TODO: Make this a config option
-        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE']  # TODO: Move this to top of file
+        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE', 'POR']  # TODO: Move this to top of file
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
             if self.layout.set.upper() in sets_without_set_symbol:
@@ -209,6 +196,23 @@ class AncientTemplate (temp.NormalClassicTemplate):
                     super().basic_text_layers(text_and_icons)
                     # self.frame_set_symbol_layer(expansion_symbol)
                     self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
+        else: super().basic_text_layers(text_and_icons)
+
+        if self.layout.set.upper() in ["POR", "P02", "PTK"] and self.is_creature:
+            print("breakpoint here")
+            power_toughness = psd.getLayer(con.layers['POWER_TOUGHNESS'], text_and_icons)
+            power_toughness.visible = False
+            sword_and_shield_group = psd.getLayer("Sword & Shield", text_and_icons)
+            sword_and_shield_group.visible = True
+            power_toughness = psd.getLayer(con.layers['POWER_TOUGHNESS'], sword_and_shield_group)
+            print("breakpoint here")
+            for lay in self.tx_layers:
+                if isinstance(lay, TextField):
+                    if lay.layer.name == "Power / Toughness":
+                        space = "  "
+                        power, tough = tuple(lay.contents.split("/"))
+                        lay.contents = str(power) + space + "/" + str(tough) + space
+                        lay.layer = power_toughness
 
     def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
         if self.layout.set.upper() == "ATQ":
@@ -228,6 +232,14 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.fill_expansion_symbol(expansion_symbol, psd.get_rgb(186, 186, 186))  # Gray
             expansion_mask = psd.getLayer("Expansion Mask", con.layers['TEXT_AND_ICONS'])
             psd.apply_stroke(expansion_mask, 5, psd.rgb_white())
+        if self.layout.set.upper() == "MIR":
+            self.skip_symbol_formatting()
+            psd.apply_stroke(expansion_symbol, 9, psd.rgb_white())
+        if self.layout.set.upper() == "VIS":
+            self.skip_symbol_formatting()
+            self.frame_set_symbol_layer(expansion_symbol)
+            psd.fill_expansion_symbol(expansion_symbol, psd.rgb_white())
+
         # if self.layout.set.upper() == "HML":
         #     assert isinstance(self.tx_layers[2], ExpansionSymbolField), "Expected third text layer to be ExpansionSymbolField"
         #     self.tx_layers[2].rarity = "common"
@@ -284,7 +296,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
             svg_symbol.translate(0,-2)
         if self.layout.set.upper() == "ALL":
-            svg_symbol.translate(-90,8)
+            svg_symbol.translate(-90,0)
         if self.layout.set.upper() == "LEG":
             scale = 0.9
             svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
