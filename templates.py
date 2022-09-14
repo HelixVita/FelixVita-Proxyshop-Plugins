@@ -134,6 +134,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def __init__(self, layout):
 
+        self.thicker_collector_info = False  # TODO: Make this a user config option
+
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
             con.set_symbols = json.load(js)
@@ -177,7 +179,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             tref.visible = False
 
         use_ccghq_set_symbols = True  # TODO: Make this a config option
-        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE', 'POR']  # TODO: Move this to top of file
+        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE', 'POR', 'WTH', 'TMP', 'STH']  # TODO: Move this to top of file
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
             if self.layout.set.upper() in sets_without_set_symbol:
@@ -309,6 +311,18 @@ class AncientTemplate (temp.NormalClassicTemplate):
             scale = 0.8
             svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
             svg_symbol.translate(0, -10)
+        if self.layout.set.upper() == "WTH":
+            svg_symbol.translate(-30, 0)
+        if self.layout.set.upper() == "TMP":
+            psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
+            scale = 0.85
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+            svg_symbol.translate(-35,4)
+        if self.layout.set.upper() == "STH":
+            psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
+            scale = 0.75
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+            svg_symbol.translate(-30,0)
 
 
 
@@ -333,9 +347,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
             (setcode in pre_legends_sets)  # Pre-legends coll must be black, because grey is ugly/illegible and white looks weird when all the other legal text is gray.
             ):
             collector_layer.textItem.color = psd.rgb_black()
-            psd.apply_stroke(collector_layer, 1, psd.rgb_black())
-        else:
-            psd.apply_stroke(collector_layer, 1, psd.get_rgb(238, 238, 238))  # White (#EEEEEE)
+
+        if self.thicker_collector_info: psd.apply_stroke(collector_layer, 1, psd.get_text_layer_color(collector_layer))
 
         # Fill in detailed collector info if available ("SET • 999/999 C" --> "ABC • 043/150 R")
         collector_layer.visible = True
@@ -544,7 +557,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                     collector_info = psd.getLayer("Set", con.layers['LEGAL'])
                     collector_info.textItem.color = gray  # Grey Alpha
                     psd.clear_layer_style(collector_info)
-                    psd.apply_stroke(collector_info, 1, gray)
+                    if self.thicker_collector_info: psd.apply_stroke(collector_info, 1, gray)
                 if self.layout.set.upper() in ["LEA", "LEB"]:
                     # Reveal "Border with Dots" by hiding the layers obscuring it
                     psd.getLayer("Border").visible = False
