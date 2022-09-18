@@ -139,6 +139,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         self.thicker_collector_info = False  # TODO: Make this a user config option
         self.use_ccghq_set_symbols = True  # TODO: Make this a config option
         self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
+        self.use_timeshifted_symbol_for_non_ancient_sets = True
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -273,6 +274,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Don't use rarity colors on set symbol for cards from pre-exodus sets
         if commons_pre_exodus and self.layout.set.upper() in pre_exodus_sets + ["POR", "P02"]:
             svg_rarity = "C"
+        if self.layout.set in post_ancient_sets and self.use_timeshifted_symbol_for_non_ancient_sets:
+            svg_rarity = "T"
         # Load custom set symbol SVG
         symbols_dirpath = Path("templates", "CCGHQ", "Magic the Gathering Vectors", "Set symbols")
         svg_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + ".svg")
@@ -341,6 +344,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.apply_stroke(svg_symbol, 4, psd.rgb_white())
         if self.layout.set.upper() in ["INV"]:
             psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
+        if self.layout.set in post_ancient_sets and self.use_timeshifted_symbol_for_non_ancient_sets:
+            psd.apply_stroke(svg_symbol, 5, psd.rgb_white())
         # Resize
         if self.layout.set.upper() in ["NEM", "MMQ", "EXO", "LGN"]:
             scale = 0.9
@@ -362,6 +367,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             svg_symbol.translate(-10,0)
         if self.layout.set.upper() in ["ULG", "USG", "PLS"]:
             pass
+
 
     def collector_info(self):
         setcode = self.layout.set.upper()
