@@ -124,7 +124,6 @@ def unhide(psdpath: tuple, is_group=False):
         selection = psd.getLayer(revpath[-1], selection)
     selection.visible = True
 
-
 class AncientTemplate (temp.NormalClassicTemplate):
     """
     FelixVita's template
@@ -135,6 +134,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
     def __init__(self, layout):
 
         self.thicker_collector_info = False  # TODO: Make this a user config option
+        self.use_ccghq_set_symbols = True  # TODO: Make this a config option
+        self.tombstone_pre_ody = True  # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -158,14 +159,13 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
 
+
         self.frame_style = "CardConRemastered-97"
         if layout.set.upper() in pre_mirage_sets:
             if self.is_land or self.layout.background == "Gold":
                 self.frame_style = "Mock-93"
             else:
                 self.frame_style = "Real-93" # TODO: Make this a user config option
-
-
 
     def resize_expref(size_modifier):
         """ Resize the expansion symbol by resizing the expansion reference layer """
@@ -184,7 +184,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.align_horizontal(rtext, tref); psd.clear_selection()
             tref.visible = False
 
-        use_ccghq_set_symbols = True  # TODO: Make this a config option
         ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE', 'POR', 'WTH', 'TMP', 'STH', "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"]  # TODO: Make this a config option named something like "sets to use ccghq svgs for"
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
@@ -193,7 +192,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 self.skip_symbol_formatting()
                 expansion_symbol.visible = False
             else:
-                if use_ccghq_set_symbols and self.layout.set.upper() in ccghq_compatible_sets:
+                if self.use_ccghq_set_symbols and self.layout.set.upper() in ccghq_compatible_sets:
                     super().basic_text_layers(text_and_icons)
                     self.skip_symbol_formatting()
                     expansion_symbol.visible = False
@@ -250,12 +249,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
         else:
             # Tested for the following sets: TOR,
             expansion_symbol.translate(-30, 0)
-
-        # if self.layout.set.upper() == "HML":
-        #     assert isinstance(self.tx_layers[2], ExpansionSymbolField), "Expected third text layer to be ExpansionSymbolField"
-        #     self.tx_layers[2].rarity = "common"
-
-
 
     def skip_symbol_formatting(self):
         """ Skip the default Proxyshop symbol formatting (stroke, fill, etc.) """
@@ -367,11 +360,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if self.layout.set.upper() in ["ULG", "USG", "PLS"]:
             pass
 
-
-
-
-
-
     def collector_info(self):
         setcode = self.layout.set.upper()
         color = self.layout.background
@@ -452,8 +440,29 @@ class AncientTemplate (temp.NormalClassicTemplate):
             if self.frame_style == "Real-93":
                 psd.getLayer("Real-93", backgd).visible = True
 
-        if "tombstone" in self.layout.frame_effects or "Flashback" in self.layout.keywords:  # TODO: Test the new "tombstone" condition. Is self.layout.frame_effects the right expression? Try a non-flashback card, like Genesis (JUD)
+        if "tombstone" in self.layout.frame_effects:
             psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
+            if self.tombstone_pre_ody:
+                if (
+                    # (color == "U" and setcode in pre_hml_sets) or  # TODO: Add condition ("{CARDNAME} is in your graveyard" in self.layout.text)
+                    # (color == "U" and setcode in pre_hml_sets) or  # TODO: Add condition ("{CARDNAME} from your graveyard" in self.layout.text)
+                    # (setcode in pre_legends_sets)  # TODO: Add other graveyard abilities (if any)
+                    ("Aftermath" in self.layout.keywords) or
+                    ("Disturb" in self.layout.keywords) or
+                    ("Dredge" in self.layout.keywords) or
+                    ("Embalm" in self.layout.keywords) or
+                    ("Encore" in self.layout.keywords) or
+                    ("Escape" in self.layout.keywords) or
+                    ("Eternalize" in self.layout.keywords) or
+                    ("Flashback" in self.layout.keywords) or
+                    ("Jump-start" in self.layout.keywords) or
+                    ("Recover" in self.layout.keywords) or
+                    ("Retrace" in self.layout.keywords) or
+                    ("Scavenge" in self.layout.keywords) or
+                    ("Unearth" in self.layout.keywords)
+                    ):
+                    psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
+                    # TODO: Test all of these tombstone conditions.
 
          # super().enable_frame_layers()
 
@@ -567,11 +576,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
         self.basic_text_layers(text_and_icons)
 
 
-
-
     def post_text_layers(self):
         super().post_text_layers()
-
 
         if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
             if self.layout.power is not None or self.layout.toughness is not None:
@@ -581,7 +587,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 pt.textItem.size = 10
                 pt.translate(0, -30)
 
-            # psd.getLayer("Card Name", "Text and Icons").translate(-100,0)  # Commented out because this would make the cardname overlap with the tombstone icon (which I might want to appear on some pre-mirage cards, even though the tombstone icon was not introduced till later sets)
+            # Shift the cardname slightly left
+            if not self.tombstone_pre_ody:
+                psd.getLayer("Card Name", "Text and Icons").translate(-100,0)
+
             # Color the white text grey for old cards
             if self.layout.set.upper() in pre_legends_sets:
                 gray = psd.get_rgb(186, 186, 186)  # Gray
@@ -612,12 +621,5 @@ class AncientTemplate (temp.NormalClassicTemplate):
                         sback = self.layout.background
                         # Use a slightly more pink version of the red frame, or softer version of the white frame
                         psd.getLayer("LEA", ("Nonland", sback, "Real-93")).visible = True
+
         print("Breakpoint for debug here")
-
-
-# psd.frame_layer(rtext, tref, smallest=True, anchor=ps.AnchorPosition.MiddleCenter, align_h=True, align_v=False)
-# app.activeDocument.activeLayer.resize(70, 100, ps.AnchorPosition.TopCenter)
-# rtext.visible = True
-# tref.visible = True
-
-
