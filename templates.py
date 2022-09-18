@@ -445,7 +445,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 ("Encore" in self.layout.keywords) or
                 ("Escape" in self.layout.keywords) or
                 ("Eternalize" in self.layout.keywords) or
-                ("Flashback" in self.layout.keywords) or
+                ("Flashback" in self.layout.keywords) or  # Example: True for "Faithless looting", but not for "Snapcaster Mage"
                 ("Jump-start" in self.layout.keywords) or
                 ("Recover" in self.layout.keywords) or
                 ("Retrace" in self.layout.keywords) or
@@ -461,8 +461,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 ):
                 psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
                 # TODO: Test all of these tombstone conditions.
-
-         # super().enable_frame_layers()
 
         if not self.is_land:
             layer_set = psd.getLayerSet(con.layers['NONLAND'])
