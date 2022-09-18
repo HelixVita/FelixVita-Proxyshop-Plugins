@@ -48,6 +48,8 @@ pre_legends_sets = list_of_all_mtg_sets[:list_of_all_mtg_sets.index("LEG")]
 pre_atq_sets = list_of_all_mtg_sets[:list_of_all_mtg_sets.index("ATQ")]
 # Antiquities gave white frames a hint of yellow tint
 
+post_ancient_sets = list_of_all_mtg_sets[list_of_all_mtg_sets.index("8ED"):]
+
 sets_without_set_symbol = [
     "LEA",
     "LEB",
@@ -133,9 +135,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def __init__(self, layout):
 
+        self.smart_tombstone = True  # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
         self.thicker_collector_info = False  # TODO: Make this a user config option
         self.use_ccghq_set_symbols = True  # TODO: Make this a config option
-        self.smart_tombstone = True  # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
+        self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -159,20 +162,12 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
 
-
         self.frame_style = "CardConRemastered-97"
         if layout.set.upper() in pre_mirage_sets:
             if self.is_land or self.layout.background == "Gold":
                 self.frame_style = "Mock-93"
             else:
                 self.frame_style = "Real-93" # TODO: Make this a user config option
-
-    def resize_expref(size_modifier):
-        """ Resize the expansion symbol by resizing the expansion reference layer """
-        size_modifier = size_modifier * 100
-        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
-        expansion_reference.resize(size_modifier, size_modifier, ps.AnchorPosition.MiddleRight)
-        expansion_reference.visible = False
 
     def basic_text_layers(self, text_and_icons):
         if self.frame_style == "Real-93":
@@ -184,7 +179,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.align_horizontal(rtext, tref); psd.clear_selection()
             tref.visible = False
 
-        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE', 'POR', 'WTH', 'TMP', 'STH', "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"]  # TODO: Make this a config option named something like "sets to use ccghq svgs for"
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
             if self.layout.set.upper() in sets_without_set_symbol:
@@ -192,7 +186,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 self.skip_symbol_formatting()
                 expansion_symbol.visible = False
             else:
-                if self.use_ccghq_set_symbols and self.layout.set.upper() in ccghq_compatible_sets:
+                if self.use_ccghq_set_symbols and self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for:
                     super().basic_text_layers(text_and_icons)
                     self.skip_symbol_formatting()
                     expansion_symbol.visible = False
