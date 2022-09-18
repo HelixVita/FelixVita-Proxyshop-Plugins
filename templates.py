@@ -170,6 +170,15 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 self.frame_style = "Real-93" # TODO: Make this a user config option
 
     def basic_text_layers(self, text_and_icons):
+
+        # TODO: Add code to fix unrenderable cardnames like "Ring of Ma'ruf" and "Marton Stromgald" (might be able to reuse the commented-out code snippet from "templates_old.py" below)
+        # # Hardcoded changes to certain cardnames containing unrenderable chars:
+        # cardname = str(self.layout.name)
+        # if setcode == "ARN" and cardname.upper().startswith("RING"):
+        #     cardname = "Ring of Ma'ruf"
+        # elif setcode == "ICE" and cardname.upper().endswith("STROMGALD"):
+        #     cardname = "Marton Stromgald"
+
         if self.frame_style == "Real-93":
             # Make the rules text narrower
             rtext = psd.getLayer("Rules Text", con.layers['TEXT_AND_ICONS'])
