@@ -135,7 +135,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
         self.thicker_collector_info = False  # TODO: Make this a user config option
         self.use_ccghq_set_symbols = True  # TODO: Make this a config option
-        self.tombstone_pre_ody = True  # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
+        self.smart_tombstone = True  # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -442,27 +442,31 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
         if "tombstone" in self.layout.frame_effects:
             psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
-            if self.tombstone_pre_ody:
-                if (
-                    # (color == "U" and setcode in pre_hml_sets) or  # TODO: Add condition ("{CARDNAME} is in your graveyard" in self.layout.text)
-                    # (color == "U" and setcode in pre_hml_sets) or  # TODO: Add condition ("{CARDNAME} from your graveyard" in self.layout.text)
-                    # (setcode in pre_legends_sets)  # TODO: Add other graveyard abilities (if any)
-                    ("Aftermath" in self.layout.keywords) or
-                    ("Disturb" in self.layout.keywords) or
-                    ("Dredge" in self.layout.keywords) or
-                    ("Embalm" in self.layout.keywords) or
-                    ("Encore" in self.layout.keywords) or
-                    ("Escape" in self.layout.keywords) or
-                    ("Eternalize" in self.layout.keywords) or
-                    ("Flashback" in self.layout.keywords) or
-                    ("Jump-start" in self.layout.keywords) or
-                    ("Recover" in self.layout.keywords) or
-                    ("Retrace" in self.layout.keywords) or
-                    ("Scavenge" in self.layout.keywords) or
-                    ("Unearth" in self.layout.keywords)
-                    ):
-                    psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
-                    # TODO: Test all of these tombstone conditions.
+        if self.smart_tombstone:
+            if (
+                ("Aftermath" in self.layout.keywords) or  # TODO: Test this once split cards is implemented
+                ("Disturb" in self.layout.keywords) or  # TODO: Test this once sun-moon MDFCs are implemented
+                ("Dredge" in self.layout.keywords) or
+                ("Embalm" in self.layout.keywords) or
+                ("Encore" in self.layout.keywords) or
+                ("Escape" in self.layout.keywords) or
+                ("Eternalize" in self.layout.keywords) or
+                ("Flashback" in self.layout.keywords) or
+                ("Jump-start" in self.layout.keywords) or
+                ("Recover" in self.layout.keywords) or
+                ("Retrace" in self.layout.keywords) or
+                ("Scavenge" in self.layout.keywords) or
+                ("Unearth" in self.layout.keywords) or
+                (f"{self.layout.card_name_raw} is in your graveyard" in self.layout.oracle_text_raw) or
+                (f"return {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+                (f"exile {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+                (f"cast {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+                (f"put {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+                (f"combine {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+                (self.layout.card_name_raw in ["Nether Spirit", "Skyblade's Boon"])
+                ):
+                psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
+                # TODO: Test all of these tombstone conditions.
 
          # super().enable_frame_layers()
 
@@ -588,7 +592,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 pt.translate(0, -30)
 
             # Shift the cardname slightly left
-            if not self.tombstone_pre_ody:
+            if not self.smart_tombstone:
                 psd.getLayer("Card Name", "Text and Icons").translate(-100,0)
 
             # Color the white text grey for old cards
