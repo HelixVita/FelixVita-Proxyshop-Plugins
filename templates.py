@@ -139,6 +139,12 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
             con.set_symbols = json.load(js)
+        # Automatic set symbol enabled?
+        if cfg.auto_symbol:
+            if layout.set in con.set_symbols:
+                layout.symbol = con.set_symbols[layout.set]
+            else: layout.symbol = cfg.symbol_char
+        else: layout.symbol = cfg.symbol_char
 
         super().__init__(layout)
         # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
@@ -179,7 +185,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             tref.visible = False
 
         use_ccghq_set_symbols = True  # TODO: Make this a config option
-        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE', 'POR', 'WTH', 'TMP', 'STH']  # TODO: Move this to top of file
+        ccghq_compatible_sets = ['PTK', 'ALL', 'ARN', 'LEG', 'FEM', 'ICE', 'POR', 'WTH', 'TMP', 'STH', "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"]  # TODO: Make this a config option named something like "sets to use ccghq svgs for"
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
             if self.layout.set.upper() in sets_without_set_symbol:
@@ -241,6 +247,9 @@ class AncientTemplate (temp.NormalClassicTemplate):
             self.skip_symbol_formatting()
             self.frame_set_symbol_layer(expansion_symbol)
             psd.fill_expansion_symbol(expansion_symbol, psd.rgb_white())
+        else:
+            # Tested for the following sets: TOR,
+            expansion_symbol.translate(-30, 0)
 
         # if self.layout.set.upper() == "HML":
         #     assert isinstance(self.tx_layers[2], ExpansionSymbolField), "Expected third text layer to be ExpansionSymbolField"
@@ -266,12 +275,13 @@ class AncientTemplate (temp.NormalClassicTemplate):
         }
         svg_rarity = ccghq_rarity_abbreviations[self.layout.rarity.title()]
         # Don't use rarity colors on set symbol for cards from pre-exodus sets
-        if commons_pre_exodus and self.layout.set.upper() in pre_exodus_sets:
+        if commons_pre_exodus and self.layout.set.upper() in pre_exodus_sets + ["POR", "P02"]:
             svg_rarity = "C"
         # Load custom set symbol SVG
         symbols_dirpath = Path("templates", "CCGHQ", "Magic the Gathering Vectors", "Set symbols")
         svg_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + ".svg")
         if svg_rarity == "C":
+            # Prefer the "Original" version of the common set symbol whenever it exists
             svg_c_original_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + " - Original.svg")
             if svg_c_original_path.is_file():
                 svg_path = svg_c_original_path
@@ -290,13 +300,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
         print("Debug breakpoint here")
 
     def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
-        if self.layout.set.upper() == "PTK":
-            psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
-            psd.rasterize_layer_style(svg_symbol)
-            psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
-            scale = 0.9
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-            svg_symbol.translate(0,-2)
         if self.layout.set.upper() == "ALL":
             svg_symbol.translate(-90,0)
         if self.layout.set.upper() == "LEG":
@@ -323,6 +326,49 @@ class AncientTemplate (temp.NormalClassicTemplate):
             scale = 0.75
             svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
             svg_symbol.translate(-30,0)
+        if self.layout.set.upper() == "PTK":
+            psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
+            psd.rasterize_layer_style(svg_symbol)
+            psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
+            scale = 0.9
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+            svg_symbol.translate(-10,-2)
+        # ===========
+        # EXO to SCG
+        # ===========
+        # Stroke thickness
+        if self.layout.set.upper() in ["UDS", "MMQ", "JUD", "APC"]:
+            psd.apply_stroke(svg_symbol, 1, psd.rgb_white())
+        if self.layout.set.upper() in ["SCG"]:
+            psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
+        if self.layout.set.upper() in ["EXO", "UDS", "S99"]:
+            psd.apply_stroke(svg_symbol, 4, psd.rgb_white())
+        if self.layout.set.upper() in ["INV"]:
+            psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
+        # Resize
+        if self.layout.set.upper() in ["NEM", "MMQ", "EXO", "LGN"]:
+            scale = 0.9
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        if self.layout.set.upper() in ["ONS"]:
+            scale = 0.95
+            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        # Vertical shift
+        if self.layout.set.upper() in ["JUD", "LGN", "NEM"]:
+            svg_symbol.translate(0, -5)
+        # Horizontal shift
+        if self.layout.set.upper() in ["EXO", "UDS", "SCG", "S99", "TOR"]:
+            svg_symbol.translate(-30,0)
+        if self.layout.set.upper() in []:
+            svg_symbol.translate(-25,0)
+        if self.layout.set.upper() in ["JUD", "LGN", "PCY", "MMQ", "ODY", "PLS"]:
+            svg_symbol.translate(-15,0)
+        if self.layout.set.upper() in ["ONS", "APC", "NEM"]:
+            svg_symbol.translate(-10,0)
+        if self.layout.set.upper() in ["ULG", "USG", "PLS"]:
+            pass
+
+
+
 
 
 

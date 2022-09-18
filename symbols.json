@@ -57,33 +57,198 @@
             "common-fill": "white"
         }
     ],
-    "P02": "",
-    "UGL": "",
-    "USG": "",
-    "ATH": "",
-    "ULG": "",
-    "6ED": "",
-    "PTK": "",
-    "UDS": "",
-    "S99": "",
-    "MMQ": "",
-    "BRB": "",
-    "NEM": "",
-    "S00": "",
-    "PCY": "",
-    "INV": "",
-    "BTD": "",
-    "PLS": "",
-    "7ED": "",
-    "APC": "",
-    "ODY": "",
-    "DKM": "",
-    "TOR": "",
-    "JUD": "",
-    "ONS": "",
-    "LGN": "",
-    "SCG": "",
-    "8ED": "",
+    "P02": [
+        {
+            "char": "",
+            "rarity": false,
+            "stroke": false,
+            "common-stroke": false,
+            "fill": "white",
+            "common-fill": "white"
+        }
+    ],
+    "UGL": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "USG": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "ATH": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "ULG": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "6ED": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "PTK": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "UDS": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "S99": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "MMQ": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "BRB": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "NEM": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "S00": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "PCY": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "INV": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "BTD": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "PLS": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "7ED": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "APC": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "ODY": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "DKM": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "TOR": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "JUD": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "ONS": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "LGN": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "SCG": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
+    "8ED": [
+        {
+            "char": "",
+            "stroke": ["white", 8],
+            "common-stroke": ["white", 8]
+        }
+    ],
     "MRD": "",
     "DST": "",
     "5DN": "",
