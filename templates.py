@@ -142,7 +142,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         self.use_timeshifted_symbol_for_non_ancient_sets = True
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
-        with open(Path(Path.cwd(), "proxyshop/plugins/FelixVita/symbols.json"), "r", encoding="utf-8-sig") as js:
+        with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
             con.set_symbols = json.load(js)
         # Automatic set symbol enabled?
         if cfg.auto_symbol:
