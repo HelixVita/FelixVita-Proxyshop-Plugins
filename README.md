@@ -16,5 +16,10 @@ More info coming soon ...
 
     ![image](https://user-images.githubusercontent.com/102387379/191352722-b02ab966-e3b4-4a0f-86cb-b4ac2661af1f.png)
 
-1. Create a new folder named `FelixVita` inside the Proxyshop `templates` folder, then download the accompanying [ancient.psd](https://drive.google.com/file/d/1l5hNK160FQ57NR-EXD-9RzwWOMPmD7k8/view?usp=sharing) photoshop template, and place it there.
-1. Run Proxyshop. You should now see "Ancient" in the list of available templates. Enjoy!
+1. Create a new folder named `FelixVita` inside the Proxyshop `templates` folder, then download the accompanying [ancient.psd](https://drive.google.com/file/d/1l5hNK160FQ57NR-EXD-9RzwWOMPmD7k8/view?usp=sharing) photoshop template, and place it there, like so:
+
+    ![image](https://user-images.githubusercontent.com/102387379/191357327-b4f3dda4-e1bd-4260-8a2c-aa13ee3055b1.png)
+
+3. Run Proxyshop. You should now see "Ancient" in the list of available templates. Enjoy!
+
+    ![image](https://user-images.githubusercontent.com/102387379/191357752-ebe486c1-59d9-480f-bb55-639ba64a7753.png)
