@@ -8,7 +8,10 @@ More info coming soon ...
 
 ## Instructions
 1. Go to the latest release of the plugin [here](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/releases/latest) and download it by clicking `Source code (zip)` (under "Assets").
-1. Unzip the folder and place it into your Proxyshop `plugins` folder, so that it looks something like this:
+
+    ![image](https://user-images.githubusercontent.com/102387379/191358011-81f4138c-8ed8-45ae-a532-17d5931a6524.png)
+
+3. Unzip the folder and place it into your Proxyshop `plugins` folder, so that it looks something like this:
 
     ![image](https://user-images.githubusercontent.com/102387379/191348877-72feeadd-28c0-4002-b48d-1a83ddcab31e.png)
 
