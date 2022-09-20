@@ -1,6 +1,8 @@
 # Ancient - A Proxyshop Plugin by FelixVita
 _Ancient_ is a custom plugin for [Proxyshop](https://github.com/MrTeferi/MTG-Proxyshop.git) which lets you create cards with the old-school/classic frame.
 
+**Compatible with Proxyshop v1.1.8**
+
 More info coming soon ...
 
 
