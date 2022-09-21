@@ -11,7 +11,7 @@ More info coming soon ...
 
     ![image](https://user-images.githubusercontent.com/102387379/191358011-81f4138c-8ed8-45ae-a532-17d5931a6524.png)
 
-3. Unzip the folder and place it into your Proxyshop `plugins` folder, so that it looks something like this:
+1. Unzip the folder and place it into your Proxyshop `plugins` folder, so that it looks something like this:
 
     ![image](https://user-images.githubusercontent.com/102387379/191348877-72feeadd-28c0-4002-b48d-1a83ddcab31e.png)
 
@@ -23,6 +23,9 @@ More info coming soon ...
 
     ![image](https://user-images.githubusercontent.com/102387379/191357327-b4f3dda4-e1bd-4260-8a2c-aa13ee3055b1.png)
 
-3. Run Proxyshop. You should now see "Ancient" in the list of available templates. Enjoy!
+1. Create another folder named `CCGHQ` in the `templates`, then download the CCGHQ Set Symbol SVG files [here](https://www.dropbox.com/sh/66vu99o8e4yo2vy/AAAijXj6WEoPbcn2Mxeafjzqa) and place there. 
+The path should look like `templates/CCGHQ/Magic the Gathering Vectors/Set Symbols`
+
+1. Run Proxyshop. You should now see "Ancient" in the list of available templates. Enjoy!
 
     ![image](https://user-images.githubusercontent.com/102387379/191357752-ebe486c1-59d9-480f-bb55-639ba64a7753.png)
