@@ -140,6 +140,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         self.use_ccghq_set_symbols = True  # TODO: Make this a config option
         self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
         self.use_timeshifted_symbol_for_non_ancient_sets = True
+        self.use_1993_frame_for_applicable_sets = False
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -164,7 +165,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             con.align_classic_quote = True
 
         self.frame_style = "CardConRemastered-97"
-        if layout.set.upper() in pre_mirage_sets:
+        if self.use_1993_frame_for_applicable_sets and layout.set.upper() in pre_mirage_sets:
             if self.is_land or self.layout.background == "Gold":
                 self.frame_style = "Mock-93"
             else:
