@@ -140,6 +140,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         self.use_ccghq_set_symbols = True  # TODO: Make this a config option
         self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
         self.use_timeshifted_symbol_for_non_ancient_sets = True
+        self.use_1993_frame_for_applicable_sets = False
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -164,7 +165,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             con.align_classic_quote = True
 
         self.frame_style = "CardConRemastered-97"
-        if layout.set.upper() in pre_mirage_sets:
+        if self.use_1993_frame_for_applicable_sets and layout.set.upper() in pre_mirage_sets:
             if self.is_land or self.layout.background == "Gold":
                 self.frame_style = "Mock-93"
             else:
@@ -191,23 +192,23 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
         if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
             expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
+            super().basic_text_layers(text_and_icons)
             if self.layout.set.upper() in sets_without_set_symbol:
-                super().basic_text_layers(text_and_icons)
                 self.skip_symbol_formatting()
                 expansion_symbol.visible = False
             else:
                 if self.use_ccghq_set_symbols and self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for:
-                    super().basic_text_layers(text_and_icons)
-                    self.skip_symbol_formatting()
-                    expansion_symbol.visible = False
-                    set_symbol_layer = self.load_symbol_svg()
-                    self.frame_set_symbol_layer(set_symbol_layer)
-                    self.apply_set_specific_svg_symbol_adjustments(set_symbol_layer)
+                    try:
+                        set_symbol_layer = self.load_symbol_svg()
+                        self.skip_symbol_formatting()
+                        expansion_symbol.visible = False
+                        self.frame_set_symbol_layer(set_symbol_layer)
+                        self.apply_set_specific_svg_symbol_adjustments(set_symbol_layer)
+                    except:
+                        pass
                 else:
-                    super().basic_text_layers(text_and_icons)
                     # self.frame_set_symbol_layer(expansion_symbol)
                     self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
-        else: super().basic_text_layers(text_and_icons)
 
         if self.layout.set.upper() in ["POR", "P02", "PTK"] and self.is_creature:
             print("breakpoint here")
