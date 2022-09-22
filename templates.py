@@ -5,11 +5,27 @@ import proxyshop.templates as temp
 from proxyshop.constants import con
 from proxyshop.settings import cfg
 import proxyshop.helpers as psd
+import proxyshop.core as core
 import photoshop.api as ps
 app = ps.Application()
 from pathlib import Path
 from proxyshop.text_layers import ExpansionSymbolField, TextField  # For type hinting
+import felix_helpers as flx
 import json
+
+"""
+LOAD CONFIGURATION
+"""
+
+
+my_config = core.import_json_config(Path(Path(__file__).parent.resolve(), "config.json"))
+ancient_cfg = my_config['Ancient']
+
+
+
+"""
+ANCIENT TEMPLATE
+"""
 
 list_of_all_mtg_sets = list(con.set_symbols.keys())
 
@@ -135,12 +151,22 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def __init__(self, layout):
 
-        self.smart_tombstone = True  # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
-        self.thicker_collector_info = False  # TODO: Make this a user config option
-        self.use_ccghq_set_symbols = True  # TODO: Make this a config option
+        # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
+        # self.smart_tombstone = True
+        # self.thicker_collector_info = False  # TODO: Make this a user config option
+        # self.use_ccghq_set_symbols = True  # TODO: Make this a config option
+        # self.use_timeshifted_symbol_for_non_ancient_sets = True
+        # self.use_1993_frame_for_applicable_sets = False
+
+
+        self.smart_tombstone = ancient_cfg["smart_tombstone"]
+        self.thicker_collector_info = ancient_cfg["thicker_collector_info"]
+        self.use_ccghq_set_symbols = ancient_cfg["use_ccghq_set_symbols"]
+        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = ancient_cfg["force_use_ccghq_set_symbols_even_when_aesthetically_inferior"]
+        self.use_timeshifted_symbol_for_non_ancient_sets = ancient_cfg["use_timeshifted_symbol_for_non_ancient_sets"]
+        self.use_1993_frame_for_applicable_sets = ancient_cfg["use_1993_frame_for_applicable_sets"]
+
         self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
-        self.use_timeshifted_symbol_for_non_ancient_sets = True
-        self.use_1993_frame_for_applicable_sets = False
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -197,7 +223,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 self.skip_symbol_formatting()
                 expansion_symbol.visible = False
             else:
-                if self.use_ccghq_set_symbols and self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for:
+                if (self.use_ccghq_set_symbols and (
+                        self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for or
+                        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior
+                        )):
                     try:
                         set_symbol_layer = self.load_symbol_svg()
                         self.skip_symbol_formatting()
@@ -616,9 +645,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 ]
                 for layer in white_text_layers:
                     layer.textItem.color = gray
+                    if self.layout.set.upper() in ['LEA', 'LEB']:
+                        flx.hide_style_inner_glow(layer)
                     if self.layout.set.upper() == "ATQ" and self.layout.rarity != "C":
                         pass  # TODO: Change color of inner glow to orange/yellow
-                    # psd.hide_style_inner_glow(layer)
                 if self.layout.background == "B":
                     # Turn collector info grey and clear layer style
                     collector_info = psd.getLayer("Set", con.layers['LEGAL'])

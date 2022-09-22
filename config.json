@@ -1,0 +1,10 @@
+{
+  "Ancient": {
+    "smart_tombstone": true,
+    "thicker_collector_info": false,
+    "use_ccghq_set_symbols": true,
+    "force_use_ccghq_set_symbols_even_when_aesthetically_inferior": false,
+    "use_timeshifted_symbol_for_non_ancient_sets": true,
+    "use_1993_frame_for_applicable_sets": true
+  }
+}
