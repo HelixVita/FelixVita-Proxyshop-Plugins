@@ -5,11 +5,82 @@ import proxyshop.templates as temp
 from proxyshop.constants import con
 from proxyshop.settings import cfg
 import proxyshop.helpers as psd
+import proxyshop.core as core
 import photoshop.api as ps
 app = ps.Application()
 from pathlib import Path
 from proxyshop.text_layers import ExpansionSymbolField, TextField  # For type hinting
+import felix_helpers as flx
 import json
+
+"""
+LOAD CONFIGURATION
+"""
+
+
+my_config = core.import_json_config(Path(Path(__file__).parent.resolve(), "config.json"))
+ancient_cfg = my_config['Ancient']
+
+
+"""
+HELPERS
+"""
+
+
+def apply_custom_collector(self, set_layer):
+    """
+    Applies collector's info to the set layer, in the FelixVita custom format:
+    <PrintYear> Proxy • Not for Sale • <SET> <CollectorNumber>/<CardCount> <Rarity>
+    For example:
+    2004 Proxy • Not for Sale • DST 140/165 U
+    If any collector info is missing, it will simply be omitted.
+    """
+    # Try to obtain release year
+    try:
+        release_year = self.layout.scryfall['released_at'][:4]
+    except:
+        release_year = None
+    # Conditionally build up the collector info string (leaving out any unavailable info)
+    collector_string = f"{release_year} " if release_year else ""
+    collector_string += "Proxy • Not for Sale • "
+    collector_string += f"{self.layout.set} "
+    collector_string += str(self.layout.collector_number).lstrip("0")
+    collector_string += "/" + str(self.layout.card_count).lstrip("0") if self.layout.card_count else ""
+    collector_string += f" {self.layout.rarity_letter}" if self.layout.rarity else ""
+    # Apply the collector info
+    set_layer.textItem.contents = collector_string
+
+
+"""
+MODERN TEMPLATE
+"""
+
+
+class ModernTemplate (temp.NormalTemplate):
+    """
+    FelixVita's Modern template (The 8th Edition / Pre-M15 frame)
+    """
+    template_file_name = "FelixVita/modern.psd"
+    template_suffix = "Modern"
+
+    def __init__(self, layout):
+        super().__init__(layout)
+
+    def enable_frame_layers(self):
+        super().enable_frame_layers()
+
+    def collector_info(self):
+        # Layers we need
+        set_layer = psd.getLayer("Set", self.legal_layer)
+        artist_layer = psd.getLayer(con.layers['ARTIST'], self.legal_layer)
+
+        # Fill set info / artist info
+        apply_custom_collector(self, set_layer)
+        psd.replace_text(artist_layer, "Artist", self.layout.artist)
+
+"""
+ANCIENT TEMPLATE
+"""
 
 list_of_all_mtg_sets = list(con.set_symbols.keys())
 
@@ -135,12 +206,22 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def __init__(self, layout):
 
-        self.smart_tombstone = True  # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
-        self.thicker_collector_info = False  # TODO: Make this a user config option
-        self.use_ccghq_set_symbols = True  # TODO: Make this a config option
+        # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
+        # self.smart_tombstone = True
+        # self.thicker_collector_info = False  # TODO: Make this a user config option
+        # self.use_ccghq_set_symbols = True  # TODO: Make this a config option
+        # self.use_timeshifted_symbol_for_non_ancient_sets = True
+        # self.use_1993_frame_for_applicable_sets = False
+
+
+        self.smart_tombstone = ancient_cfg["smart_tombstone"]
+        self.thicker_collector_info = ancient_cfg["thicker_collector_info"]
+        self.use_ccghq_set_symbols = ancient_cfg["use_ccghq_set_symbols"]
+        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = ancient_cfg["force_use_ccghq_set_symbols_even_when_aesthetically_inferior"]
+        self.use_timeshifted_symbol_for_non_ancient_sets = ancient_cfg["use_timeshifted_symbol_for_non_ancient_sets"]
+        self.use_1993_frame_for_applicable_sets = ancient_cfg["use_1993_frame_for_applicable_sets"]
+
         self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
-        self.use_timeshifted_symbol_for_non_ancient_sets = True
-        self.use_1993_frame_for_applicable_sets = False
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -197,7 +278,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 self.skip_symbol_formatting()
                 expansion_symbol.visible = False
             else:
-                if self.use_ccghq_set_symbols and self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for:
+                if (self.use_ccghq_set_symbols and (
+                        self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for or
+                        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior
+                        )):
                     try:
                         set_symbol_layer = self.load_symbol_svg()
                         self.skip_symbol_formatting()
@@ -616,9 +700,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 ]
                 for layer in white_text_layers:
                     layer.textItem.color = gray
+                    if self.layout.set.upper() in ['LEA', 'LEB']:
+                        flx.hide_style_inner_glow(layer)
                     if self.layout.set.upper() == "ATQ" and self.layout.rarity != "C":
                         pass  # TODO: Change color of inner glow to orange/yellow
-                    # psd.hide_style_inner_glow(layer)
                 if self.layout.background == "B":
                     # Turn collector info grey and clear layer style
                     collector_info = psd.getLayer("Set", con.layers['LEGAL'])
