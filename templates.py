@@ -22,6 +22,61 @@ my_config = core.import_json_config(Path(Path(__file__).parent.resolve(), "confi
 ancient_cfg = my_config['Ancient']
 
 
+"""
+HELPERS
+"""
+
+
+def apply_custom_collector(self, set_layer):
+    """
+    Applies collector's info to the set layer, in the FelixVita custom format:
+    <PrintYear> Proxy • Not for Sale • <SET> <CollectorNumber>/<CardCount> <Rarity>
+    For example:
+    2004 Proxy • Not for Sale • DST 140/165 U
+    If any collector info is missing, it will simply be omitted.
+    """
+    # Try to obtain release year
+    try:
+        release_year = self.layout.scryfall['released_at'][:4]
+    except:
+        release_year = None
+    # Conditionally build up the collector info string (leaving out any unavailable info)
+    collector_string = f"{release_year} " if release_year else ""
+    collector_string += "Proxy • Not for Sale • "
+    collector_string += f"{self.layout.set} "
+    collector_string += str(self.layout.collector_number).lstrip("0")
+    collector_string += "/" + str(self.layout.card_count).lstrip("0") if self.layout.card_count else ""
+    collector_string += f" {self.layout.rarity_letter}" if self.layout.rarity else ""
+    # Apply the collector info
+    set_layer.textItem.contents = collector_string
+
+
+"""
+MODERN TEMPLATE
+"""
+
+
+class ModernTemplate (temp.NormalTemplate):
+    """
+    FelixVita's Modern template (The 8th Edition / Pre-M15 frame)
+    """
+    template_file_name = "FelixVita/modern.psd"
+    template_suffix = "Modern"
+
+    def __init__(self, layout):
+        super().__init__(layout)
+
+    def enable_frame_layers(self):
+        super().enable_frame_layers()
+
+    def collector_info(self):
+        # Layers we need
+        set_layer = psd.getLayer("Set", self.legal_layer)
+        artist_layer = psd.getLayer(con.layers['ARTIST'], self.legal_layer)
+
+        # Fill set info / artist info
+        apply_custom_collector(self, set_layer)
+        psd.replace_text(artist_layer, "Artist", self.layout.artist)
 
 """
 ANCIENT TEMPLATE

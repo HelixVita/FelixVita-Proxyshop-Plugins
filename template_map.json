@@ -1,5 +1,6 @@
 {
 	"normal": {
-		"Ancient": "AncientTemplate"
+		"Ancient": "AncientTemplate",
+		"Modern": "ModernTemplate"
 	}
 }
