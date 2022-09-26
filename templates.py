@@ -78,6 +78,10 @@ class ModernTemplate (temp.NormalTemplate):
         apply_custom_collector(self, set_layer)
         psd.replace_text(artist_layer, "Artist", self.layout.artist)
 
+        # Make text white for Lands and Black cards
+        if self.layout.background in ["Land", "B"]:
+            psd.getLayer("Invert Legal Color").visible = True
+
 """
 ANCIENT TEMPLATE
 """
