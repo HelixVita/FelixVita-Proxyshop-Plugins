@@ -23,67 +23,7 @@ ancient_cfg = my_config['Ancient']
 
 
 """
-HELPERS
-"""
-
-
-def apply_custom_collector(self, set_layer):
-    """
-    Applies collector's info to the set layer, in the FelixVita custom format:
-    <PrintYear> Proxy • Not for Sale • <SET> <CollectorNumber>/<CardCount> <Rarity>
-    For example:
-    2004 Proxy • Not for Sale • DST 140/165 U
-    If any collector info is missing, it will simply be omitted.
-    """
-    # Try to obtain release year
-    try:
-        release_year = self.layout.scryfall['released_at'][:4]
-    except:
-        release_year = None
-    # Conditionally build up the collector info string (leaving out any unavailable info)
-    collector_string = f"{release_year} " if release_year else ""
-    collector_string += "Proxy • Not for Sale • "
-    collector_string += f"{self.layout.set} "
-    collector_string += str(self.layout.collector_number).lstrip("0")
-    collector_string += "/" + str(self.layout.card_count).lstrip("0") if self.layout.card_count else ""
-    collector_string += f" {self.layout.rarity_letter}" if self.layout.rarity else ""
-    # Apply the collector info
-    set_layer.textItem.contents = collector_string
-
-
-"""
-MODERN TEMPLATE
-"""
-
-
-class ModernTemplate (temp.NormalTemplate):
-    """
-    FelixVita's Modern template (The 8th Edition / Pre-M15 frame)
-    """
-    template_file_name = "FelixVita/modern.psd"
-    template_suffix = "Modern"
-
-    def __init__(self, layout):
-        super().__init__(layout)
-
-    def enable_frame_layers(self):
-        super().enable_frame_layers()
-
-    def collector_info(self):
-        # Layers we need
-        set_layer = psd.getLayer("Set", self.legal_layer)
-        artist_layer = psd.getLayer(con.layers['ARTIST'], self.legal_layer)
-
-        # Fill set info / artist info
-        apply_custom_collector(self, set_layer)
-        psd.replace_text(artist_layer, "Artist", self.layout.artist)
-
-        # Make text white for Lands and Black cards
-        if self.layout.background in ["Land", "B"]:
-            psd.getLayer("Invert Legal Color").visible = True
-
-"""
-ANCIENT TEMPLATE
+HELPER CONSTANTS
 """
 
 list_of_all_mtg_sets = list(con.set_symbols.keys())
@@ -188,6 +128,226 @@ original_dual_lands = [
 
 all_keyrune_pre_eighth_symbols_for_debugging = ""
 
+
+"""
+HELPER FUNCTIONS
+"""
+
+def apply_custom_collector(self, set_layer):
+    """
+    Applies collector's info to the set layer, in the FelixVita custom format:
+    <PrintYear> Proxy • Not for Sale • <SET> <CollectorNumber>/<CardCount> <Rarity>
+    For example:
+    2004 Proxy • Not for Sale • DST 140/165 U
+    If any collector info is missing, it will simply be omitted.
+    """
+    # Try to obtain release year
+    try:
+        release_year = self.layout.scryfall['released_at'][:4]
+    except:
+        release_year = None
+    # Conditionally build up the collector info string (leaving out any unavailable info)
+    collector_string = f"{release_year} " if release_year else ""
+    collector_string += "Proxy • Not for Sale • "
+    collector_string += f"{self.layout.set} "
+    collector_string += str(self.layout.collector_number).lstrip("0")
+    collector_string += "/" + str(self.layout.card_count).lstrip("0") if self.layout.card_count else ""
+    collector_string += f" {self.layout.rarity_letter}" if self.layout.rarity else ""
+    # Apply the collector info
+    set_layer.textItem.contents = collector_string
+
+def left_align_artist_and_collector(self):
+    """ Left-align the artist and collector info """
+    reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
+    artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
+    collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
+    artist_delta = reference.bounds[0] - artist.bounds[0]
+    collector_delta = reference.bounds[0] - collector.bounds[0]
+    artist.translate(artist_delta, 0)
+    collector.translate(collector_delta, 0)
+
+def felix_set_symbol_logic(self):
+    if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
+        expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
+        if self.layout.set.upper() in sets_without_set_symbol:
+            skip_symbol_formatting(self)
+            expansion_symbol.visible = False
+        else:
+            if (self.use_ccghq_set_symbols and (
+                    self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for or
+                    self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior
+                    )):
+                try:
+                    set_symbol_layer = load_symbol_svg(self, self.sets_without_rarity, self.sets_with_timeshifted_rarity)
+                    skip_symbol_formatting(self)
+                    reassign_symbol_reference(self, set_symbol_layer)
+                    expansion_symbol.visible = False
+                    frame_set_symbol_layer(set_symbol_layer)
+                    apply_set_specific_svg_symbol_adjustments(self, set_symbol_layer)
+                except:
+                    pass
+            else:
+                # frame_set_symbol_layer(self, expansion_symbol)
+                apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol)
+
+def load_symbol_svg(self, sets_without_rarity: list = None, sets_with_timeshifted_rarity: list = None):
+    # Get rarity
+    ccghq_rarity_abbreviations = {
+        "Common": "C",
+        "Uncommon": "U",
+        "Rare": "R",
+        "Mythic": "M",
+        "Mythic Rare": "M",
+        "Special": "S",
+        "Basic Land": "L",
+        "Timeshifted": "T",
+        "Masterpiece": "M",
+    }
+    svg_rarity = ccghq_rarity_abbreviations[self.layout.rarity.title()]
+    if sets_without_rarity and self.layout.set.upper() in sets_without_rarity:
+            svg_rarity = "C"
+    if sets_with_timeshifted_rarity and self.layout.set.upper() in post_ancient_sets:
+            svg_rarity = "T"
+    # Load custom set symbol SVG
+    symbols_dirpath = Path("templates", "CCGHQ", "Magic the Gathering Vectors", "Set symbols")
+    svg_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + ".svg")
+    if svg_rarity == "C":
+        # Prefer the "Original" version of the common set symbol whenever it exists
+        svg_c_original_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + " - Original.svg")
+        if svg_c_original_path.is_file():
+            svg_path = svg_c_original_path
+    # Select the "Card Name" layer so that the new set symbol layer is created next to it
+    app.activeDocument.activeLayer = psd.getLayer(con.layers['NAME'], con.layers['TEXT_AND_ICONS'])
+    set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))
+    return set_symbol_layer
+
+def skip_symbol_formatting(self):
+    """ Skip the default Proxyshop symbol formatting (stroke, fill, etc.) """
+    self.tx_layers = [_ for _ in self.tx_layers if not isinstance(_, ExpansionSymbolField)]
+
+def reassign_symbol_reference(self, new_layer):
+    """
+    Reassign the Typeline text field's expansion symbol reference to a different layer.
+    This is needed in order to make the automatic sizing of the typeline to work properly, as it uses the expansion symbol's bounds to determine the typeline's width.
+    """
+    for lay in self.tx_layers:
+        if lay.layer.name == 'Typeline':
+            lay.reference = new_layer
+
+def frame_set_symbol_layer(set_symbol_layer):
+    # Resize and position the set symbol
+    expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
+    psd.frame_layer(set_symbol_layer, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=False, align_v=True)
+    psd.align("AdRg", set_symbol_layer, expansion_reference); psd.clear_selection()
+    # font_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
+    # psd.frame_layer(font_symbol, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=True, align_v=True)
+    print("Debug breakpoint here")
+
+
+
+"""
+HELPERS FOR SET-SPECIFIC SYMBOL ADJUSTMENTS
+"""
+
+def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
+    if self.layout.set.upper() == "ATQ":
+        expansion_symbol.resize(112, 112)
+        expansion_symbol.translate(-200, -20)
+        skip_symbol_formatting(self)
+    if self.layout.set.upper() == "DRK":
+        expansion_symbol.translate(30, 10)
+        skip_symbol_formatting(self)
+        if self.layout.background == "B":
+            psd.apply_stroke(expansion_symbol, 2, psd.get_rgb(133, 138, 153))
+    if self.layout.set.upper() == "HML":
+        skip_symbol_formatting(self)
+        app.activeDocument.activeLayer = expansion_symbol
+        # expansion_symbol.resize(105, 105)
+        expansion_symbol.translate(0, -5)
+        psd.fill_expansion_symbol(expansion_symbol, psd.get_rgb(186, 186, 186))  # Gray
+        expansion_mask = psd.getLayer("Expansion Mask", con.layers['TEXT_AND_ICONS'])
+        psd.apply_stroke(expansion_mask, 5, psd.rgb_white())
+    if self.layout.set.upper() == "MIR":
+        skip_symbol_formatting(self)
+        psd.apply_stroke(expansion_symbol, 9, psd.rgb_white())
+    if self.layout.set.upper() == "VIS":
+        skip_symbol_formatting(self)
+        frame_set_symbol_layer(self, expansion_symbol)
+        psd.fill_expansion_symbol(expansion_symbol, psd.rgb_white())
+    else:
+        # Tested for the following sets: TOR,
+        expansion_symbol.translate(-30, 0)
+
+def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
+    if self.layout.set.upper() == "ALL":
+        svg_symbol.translate(-90,0)
+    if self.layout.set.upper() == "LEG":
+        scale = 0.9
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        svg_symbol.translate(30, 10)
+    if self.layout.set.upper() == "FEM":
+        scale = 0.75
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        svg_symbol.translate(23, -15)
+    if self.layout.set.upper() == "ICE":
+        scale = 0.8
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        svg_symbol.translate(0, -10)
+    if self.layout.set.upper() == "WTH":
+        svg_symbol.translate(-30, 0)
+    if self.layout.set.upper() == "TMP":
+        psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
+        scale = 0.85
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        svg_symbol.translate(-35,4)
+    if self.layout.set.upper() == "STH":
+        psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
+        scale = 0.75
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        svg_symbol.translate(-30,0)
+    if self.layout.set.upper() == "PTK":
+        psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
+        psd.rasterize_layer_style(svg_symbol)
+        psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
+        scale = 0.9
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+        svg_symbol.translate(-10,-2)
+    # ===========
+    # EXO to SCG
+    # ===========
+    # Stroke thickness
+    if self.layout.set.upper() in ["UDS", "MMQ", "JUD", "APC"]:
+        psd.apply_stroke(svg_symbol, 1, psd.rgb_white())
+    if self.layout.set.upper() in ["SCG"]:
+        psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
+    if self.layout.set.upper() in ["EXO", "UDS", "S99"]:
+        psd.apply_stroke(svg_symbol, 4, psd.rgb_white())
+    if self.layout.set.upper() in ["INV"]:
+        psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
+    if self.layout.set in post_ancient_sets and self.use_timeshifted_symbol_for_non_ancient_sets:
+        psd.apply_stroke(svg_symbol, 5, psd.rgb_white())
+    # Resize
+    if self.layout.set.upper() in ["NEM", "MMQ", "EXO", "LGN"]:
+        scale = 0.9
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+    if self.layout.set.upper() in ["ONS"]:
+        scale = 0.95
+        svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
+    # Vertical shift
+    if self.layout.set.upper() in ["JUD", "LGN", "NEM"]:
+        svg_symbol.translate(0, -5)
+    # Horizontal shift
+    if self.layout.set.upper() in ["EXO", "UDS", "SCG", "S99", "TOR"]:
+        svg_symbol.translate(-30,0)
+    if self.layout.set.upper() in []:
+        svg_symbol.translate(-25,0)
+    if self.layout.set.upper() in ["JUD", "LGN", "PCY", "MMQ", "ODY", "PLS"]:
+        svg_symbol.translate(-15,0)
+    if self.layout.set.upper() in ["ONS", "APC", "NEM"]:
+        svg_symbol.translate(-10,0)
+    if self.layout.set.upper() in ["ULG", "USG", "PLS"]:
+        pass
+
 # TODO: Get rid of this "unhide" function, as it's no longer needed (now that psd.getLayer has this functionality).
 def unhide(psdpath: tuple, is_group=False):
     # Example: psdpath = ("RW", "ABUR Duals (ME4)", "Land")
@@ -201,6 +361,52 @@ def unhide(psdpath: tuple, is_group=False):
         selection = psd.getLayer(revpath[-1], selection)
     selection.visible = True
 
+
+"""
+MODERN TEMPLATE
+"""
+# TODO: Improve set symbol faithfulness for the following sets:
+# THS: Stroke should be white, not black.
+# BNG: Stroke should be white, not black.
+
+
+
+class ModernTemplate (temp.NormalTemplate):
+    """
+    FelixVita's Modern template (The 8th Edition / Pre-M15 frame)
+    """
+    template_file_name = "FelixVita/modern.psd"
+    template_suffix = "Modern"
+
+    def __init__(self, layout):
+        self.use_ccghq_set_symbols = True
+        self.sets_to_use_ccghq_svgs_for = post_ancient_sets
+        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
+        self.sets_without_rarity = None
+        self.sets_with_timeshifted_rarity = None
+        super().__init__(layout)
+
+    def enable_frame_layers(self):
+        super().enable_frame_layers()
+
+    def collector_info(self):
+        # Layers we need
+        set_layer = psd.getLayer("Set", self.legal_layer)
+        artist_layer = psd.getLayer(con.layers['ARTIST'], self.legal_layer)
+
+        # Fill set info / artist info
+        apply_custom_collector(self, set_layer)
+        psd.replace_text(artist_layer, "Artist", self.layout.artist)
+
+        # Make text white for Lands and Black cards
+        if self.layout.background in ["Land", "B"]:
+            psd.getLayer("Invert Legal Color").visible = True
+
+    def basic_text_layers(self, text_and_icons):
+        super().basic_text_layers(text_and_icons)
+        felix_set_symbol_logic(self)
+
+
 class AncientTemplate (temp.NormalClassicTemplate):
     """
     FelixVita's template
@@ -210,22 +416,17 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def __init__(self, layout):
 
-        # The tombstone icon was not introduced until Odyssey, but you can set this option to True to enable this on all relevant cards. # TODO: Make this a user option.
-        # self.smart_tombstone = True
-        # self.thicker_collector_info = False  # TODO: Make this a user config option
-        # self.use_ccghq_set_symbols = True  # TODO: Make this a config option
-        # self.use_timeshifted_symbol_for_non_ancient_sets = True
-        # self.use_1993_frame_for_applicable_sets = False
-
-
         self.smart_tombstone = ancient_cfg["smart_tombstone"]
         self.thicker_collector_info = ancient_cfg["thicker_collector_info"]
         self.use_ccghq_set_symbols = ancient_cfg["use_ccghq_set_symbols"]
         self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = ancient_cfg["force_use_ccghq_set_symbols_even_when_aesthetically_inferior"]
+        self.use_common_symbol_for_pre_exodus_sets = ancient_cfg["use_common_symbol_for_pre_exodus_sets"]
         self.use_timeshifted_symbol_for_non_ancient_sets = ancient_cfg["use_timeshifted_symbol_for_non_ancient_sets"]
         self.use_1993_frame_for_applicable_sets = ancient_cfg["use_1993_frame_for_applicable_sets"]
 
         self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
+        self.sets_with_timeshifted_rarity = post_ancient_sets if self.use_timeshifted_symbol_for_non_ancient_sets else None
+        self.sets_without_rarity = pre_exodus_sets + ["POR", "P02"] if self.use_common_symbol_for_pre_exodus_sets else None
 
         # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
         with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
@@ -275,28 +476,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.align_horizontal(rtext, tref); psd.clear_selection()
             tref.visible = False
 
-        if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
-            expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
-            super().basic_text_layers(text_and_icons)
-            if self.layout.set.upper() in sets_without_set_symbol:
-                self.skip_symbol_formatting()
-                expansion_symbol.visible = False
-            else:
-                if (self.use_ccghq_set_symbols and (
-                        self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for or
-                        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior
-                        )):
-                    try:
-                        set_symbol_layer = self.load_symbol_svg()
-                        self.skip_symbol_formatting()
-                        expansion_symbol.visible = False
-                        self.frame_set_symbol_layer(set_symbol_layer)
-                        self.apply_set_specific_svg_symbol_adjustments(set_symbol_layer)
-                    except:
-                        pass
-                else:
-                    # self.frame_set_symbol_layer(expansion_symbol)
-                    self.apply_set_specific_keyrune_symbol_adjustments(expansion_symbol)
+        super().basic_text_layers(text_and_icons)
+        felix_set_symbol_logic(self)
 
         if self.layout.set.upper() in ["POR", "P02", "PTK"] and self.is_creature:
             print("breakpoint here")
@@ -313,149 +494,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
                         power, tough = tuple(lay.contents.split("/"))
                         lay.contents = str(power) + space + "/" + str(tough) + space
                         lay.layer = power_toughness
-
-    def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
-        if self.layout.set.upper() == "ATQ":
-            expansion_symbol.resize(112, 112)
-            expansion_symbol.translate(-200, -20)
-            self.skip_symbol_formatting()
-        if self.layout.set.upper() == "DRK":
-            expansion_symbol.translate(30, 10)
-            self.skip_symbol_formatting()
-            if self.layout.background == "B":
-                psd.apply_stroke(expansion_symbol, 2, psd.get_rgb(133, 138, 153))
-        if self.layout.set.upper() == "HML":
-            self.skip_symbol_formatting()
-            app.activeDocument.activeLayer = expansion_symbol
-            # expansion_symbol.resize(105, 105)
-            expansion_symbol.translate(0, -5)
-            psd.fill_expansion_symbol(expansion_symbol, psd.get_rgb(186, 186, 186))  # Gray
-            expansion_mask = psd.getLayer("Expansion Mask", con.layers['TEXT_AND_ICONS'])
-            psd.apply_stroke(expansion_mask, 5, psd.rgb_white())
-        if self.layout.set.upper() == "MIR":
-            self.skip_symbol_formatting()
-            psd.apply_stroke(expansion_symbol, 9, psd.rgb_white())
-        if self.layout.set.upper() == "VIS":
-            self.skip_symbol_formatting()
-            self.frame_set_symbol_layer(expansion_symbol)
-            psd.fill_expansion_symbol(expansion_symbol, psd.rgb_white())
-        else:
-            # Tested for the following sets: TOR,
-            expansion_symbol.translate(-30, 0)
-
-    def skip_symbol_formatting(self):
-        """ Skip the default Proxyshop symbol formatting (stroke, fill, etc.) """
-        self.tx_layers = [_ for _ in self.tx_layers if not isinstance(_, ExpansionSymbolField)]
-
-    def load_symbol_svg(self, commons_pre_exodus=True):
-        # Get rarity
-        ccghq_rarity_abbreviations = {
-            "Common": "C",
-            "Uncommon": "U",
-            "Rare": "R",
-            "Mythic Rare": "M",
-            "Special": "S",
-            "Basic Land": "L",
-            "Timeshifted": "T",
-            "Masterpiece": "M",
-        }
-        svg_rarity = ccghq_rarity_abbreviations[self.layout.rarity.title()]
-        # Don't use rarity colors on set symbol for cards from pre-exodus sets
-        if commons_pre_exodus and self.layout.set.upper() in pre_exodus_sets + ["POR", "P02"]:
-            svg_rarity = "C"
-        if self.layout.set in post_ancient_sets and self.use_timeshifted_symbol_for_non_ancient_sets:
-            svg_rarity = "T"
-        # Load custom set symbol SVG
-        symbols_dirpath = Path("templates", "CCGHQ", "Magic the Gathering Vectors", "Set symbols")
-        svg_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + ".svg")
-        if svg_rarity == "C":
-            # Prefer the "Original" version of the common set symbol whenever it exists
-            svg_c_original_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + " - Original.svg")
-            if svg_c_original_path.is_file():
-                svg_path = svg_c_original_path
-        # Select the "Card Name" layer so that the new set symbol layer is created next to it
-        app.activeDocument.activeLayer = psd.getLayer(con.layers['NAME'], con.layers['TEXT_AND_ICONS'])
-        set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))
-        return set_symbol_layer
-
-    def frame_set_symbol_layer(self, set_symbol_layer):
-        # Resize and position the set symbol
-        expansion_reference = psd.getLayer(con.layers['EXPANSION_REFERENCE'], con.layers['TEXT_AND_ICONS'])
-        psd.frame_layer(set_symbol_layer, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=False, align_v=True)
-        psd.align("AdRg", set_symbol_layer, expansion_reference); psd.clear_selection()
-        # font_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
-        # psd.frame_layer(font_symbol, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=True, align_v=True)
-        print("Debug breakpoint here")
-
-    def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
-        if self.layout.set.upper() == "ALL":
-            svg_symbol.translate(-90,0)
-        if self.layout.set.upper() == "LEG":
-            scale = 0.9
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-            svg_symbol.translate(30, 10)
-        if self.layout.set.upper() == "FEM":
-            scale = 0.75
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-            svg_symbol.translate(23, -15)
-        if self.layout.set.upper() == "ICE":
-            scale = 0.8
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-            svg_symbol.translate(0, -10)
-        if self.layout.set.upper() == "WTH":
-            svg_symbol.translate(-30, 0)
-        if self.layout.set.upper() == "TMP":
-            psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
-            scale = 0.85
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-            svg_symbol.translate(-35,4)
-        if self.layout.set.upper() == "STH":
-            psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
-            scale = 0.75
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-            svg_symbol.translate(-30,0)
-        if self.layout.set.upper() == "PTK":
-            psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
-            psd.rasterize_layer_style(svg_symbol)
-            psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
-            scale = 0.9
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-            svg_symbol.translate(-10,-2)
-        # ===========
-        # EXO to SCG
-        # ===========
-        # Stroke thickness
-        if self.layout.set.upper() in ["UDS", "MMQ", "JUD", "APC"]:
-            psd.apply_stroke(svg_symbol, 1, psd.rgb_white())
-        if self.layout.set.upper() in ["SCG"]:
-            psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
-        if self.layout.set.upper() in ["EXO", "UDS", "S99"]:
-            psd.apply_stroke(svg_symbol, 4, psd.rgb_white())
-        if self.layout.set.upper() in ["INV"]:
-            psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
-        if self.layout.set in post_ancient_sets and self.use_timeshifted_symbol_for_non_ancient_sets:
-            psd.apply_stroke(svg_symbol, 5, psd.rgb_white())
-        # Resize
-        if self.layout.set.upper() in ["NEM", "MMQ", "EXO", "LGN"]:
-            scale = 0.9
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-        if self.layout.set.upper() in ["ONS"]:
-            scale = 0.95
-            svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-        # Vertical shift
-        if self.layout.set.upper() in ["JUD", "LGN", "NEM"]:
-            svg_symbol.translate(0, -5)
-        # Horizontal shift
-        if self.layout.set.upper() in ["EXO", "UDS", "SCG", "S99", "TOR"]:
-            svg_symbol.translate(-30,0)
-        if self.layout.set.upper() in []:
-            svg_symbol.translate(-25,0)
-        if self.layout.set.upper() in ["JUD", "LGN", "PCY", "MMQ", "ODY", "PLS"]:
-            svg_symbol.translate(-15,0)
-        if self.layout.set.upper() in ["ONS", "APC", "NEM"]:
-            svg_symbol.translate(-10,0)
-        if self.layout.set.upper() in ["ULG", "USG", "PLS"]:
-            pass
 
 
     def collector_info(self):
@@ -484,34 +522,13 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
         # Fill in detailed collector info if available ("SET • 999/999 C" --> "ABC • 043/150 R")
         collector_layer.visible = True
-        # Try to obtain release year
-        try:
-            release_year = self.layout.scryfall['released_at'][:4]
-        except:
-            release_year = None
-        # Conditionally build up the collector info string (leaving out any unavailable info)
-        collector_string = ""
-        collector_string += "Proxy • Not for Sale — "
-        collector_string += f"{self.layout.set} • "
-        collector_string += f"{release_year} • " if release_year else ""
-        collector_string += str(self.layout.collector_number).lstrip("0")
-        collector_string += "/" + str(self.layout.card_count).lstrip("0") if self.layout.card_count else ""
-        collector_string += f" {self.layout.rarity_letter}" if self.layout.rarity else ""
-        # Apply the collector info
-        collector_layer.textItem.contents = collector_string
+
+        apply_custom_collector(self, collector_layer)
+
         # Left-align the collector info for old cards
         if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
-            self.left_align_artist_and_collector()
+            left_align_artist_and_collector(self)
 
-    def left_align_artist_and_collector(self):
-        """ Left-align the artist and collector info """
-        reference = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
-        artist = psd.getLayer(con.layers['ARTIST'], con.layers['LEGAL'])
-        collector = psd.getLayer(con.layers['SET'], con.layers['LEGAL'])
-        artist_delta = reference.bounds[0] - artist.bounds[0]
-        collector_delta = reference.bounds[0] - collector.bounds[0]
-        artist.translate(artist_delta, 0)
-        collector.translate(collector_delta, 0)
 
     def enable_frame_layers(self):
         # Variables
