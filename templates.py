@@ -372,6 +372,7 @@ POSTMODERN TEMPLATE
 # TODO: Add "BS & Copyleft" copyright line (preferably without modifying the psd file)
 # Perhaps you can use the photoshop api to generate some text fields
 # and then use the layers top-collector and Expansion Symbol as vertical and horizontal alignment guides, respectively.
+# On second thought, it's probably easier to pre-render the text to an SVG and then use load_svg to add it to the normal.psd file (then align as described above).
 
 
 class PostmodernTemplate (temp.NormalTemplate):
