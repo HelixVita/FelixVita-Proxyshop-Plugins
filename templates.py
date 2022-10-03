@@ -556,6 +556,9 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Artist layer & set/copyright/collector info layer
         collector_layer = psd.getLayer(con.layers['SET'], legal_layer)
         artist_layer = psd.getLayer(con.layers['ARTIST'], legal_layer)
+        tmc = psd.getLayer("BS & Copyleft", legal_layer)
+        tm_layer = psd.getLayer("BS &", tmc)
+        c_layer = psd.getLayer("Copyleft", tmc)
         # Replace "Illus. Artist" with "Illus. <Artist Name>"
         psd.replace_text(artist_layer, "Artist", self.layout.artist)
         # Select the collector info layer:
@@ -569,17 +572,42 @@ class AncientTemplate (temp.NormalClassicTemplate):
             (setcode in pre_legends_sets)  # Pre-legends coll must be black, because grey is ugly/illegible and white looks weird when all the other legal text is gray.
             ):
             collector_layer.textItem.color = psd.rgb_black()
+            tm_layer.textItem.color = psd.rgb_black()
+            c_layer.textItem.color = psd.rgb_black()
 
         if self.thicker_collector_info: psd.apply_stroke(collector_layer, 1, psd.get_text_layer_color(collector_layer))
 
-        # Fill in detailed collector info if available ("SET • 999/999 C" --> "ABC • 043/150 R")
-        collector_layer.visible = True
+        if self.layout.set.upper() in pre_legends_sets and self.layout.background == "B":
+            # Turn collector info grey and clear layer style  # TODO: Test this
+            gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
+            collector_layer.textItem.color = gray
+            tm_layer.textItem.color = gray
+            c_layer.textItem.color = gray
+            psd.clear_layer_style(collector_layer)  # To get rid of inner glow
+            psd.clear_layer_style(tm_layer)  # To get rid of inner glow
+            psd.clear_layer_style(c_layer)  # To get rid of inner glow
+            if self.thicker_collector_info: psd.apply_stroke(collector_layer)
 
+        # Fill in detailed collector info if available ("SET • 999/999 C" --> "ABC • 043/150 R")
+        # collector_layer.visible = True  # Probably not needed? Hence commented out.
         apply_custom_collector(self, collector_layer)
 
-        # Left-align the collector info for old cards
+        # For old cards (pre-Mirage), left-justify the artist and collector info (and remove trademark symbol)
         if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
-            left_align_artist_and_collector(self)
+            tm_layer.visible = False
+            coll_combo = psd.merge_layers(collector_layer, tmc)
+            lalign_ref = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
+            psd.align("AdLf", coll_combo, lalign_ref); psd.clear_selection()
+            psd.align("AdLf", artist_layer, lalign_ref); psd.clear_selection()
+
+        else:
+            # Center-align the collector info
+            # TODO: Put ancient.psd layers back centered as they were, and change order of Set and "BS & Copyleft" layers in the PSD
+            tref = psd.getLayer("Textbox Reference", con.layers['TEXT_AND_ICONS'])
+            coll_combo = psd.merge_layers(collector_layer, tmc)
+            psd.align("AdCH", coll_combo, tref); psd.clear_selection()
+            psd.align("AdCH", artist_layer, tref); psd.clear_selection()
+
 
 
     def enable_frame_layers(self):
@@ -777,12 +805,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
                         flx.hide_style_inner_glow(layer)
                     if self.layout.set.upper() == "ATQ" and self.layout.rarity != "C":
                         pass  # TODO: Change color of inner glow to orange/yellow
-                if self.layout.background == "B":
-                    # Turn collector info grey and clear layer style
-                    collector_info = psd.getLayer("Set", con.layers['LEGAL'])
-                    collector_info.textItem.color = gray  # Grey Alpha
-                    psd.clear_layer_style(collector_info)
-                    if self.thicker_collector_info: psd.apply_stroke(collector_info, 1, gray)
                 if self.layout.set.upper() in ["LEA", "LEB"]:
                     # Reveal "Border with Dots" by hiding the layers obscuring it
                     psd.getLayer("Border").visible = False
