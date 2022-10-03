@@ -579,7 +579,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
         if self.layout.set.upper() in pre_legends_sets and self.layout.background == "B":
             # Turn collector info grey and clear layer style  # TODO: Test this
-            gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
+            # gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
+            gray = flx.rgb_hex("acb0bc")  # Gray for Alpha
             collector_layer.textItem.color = gray
             tm_layer.textItem.color = gray
             c_layer.textItem.color = gray
@@ -792,7 +793,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
             if self.layout.set.upper() in pre_legends_sets:
                 gray = psd.get_rgb(186, 186, 186)  # Gray
                 if self.layout.set.upper() in ['LEA', 'LEB'] or (self.layout.background == "W" and self.layout.set.upper() in ['ARN', 'ATQ']):
-                    gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
+                    # gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
+                    gray = flx.rgb_hex("acb0bc")  # Gray for Alpha
                 white_text_layers = [
                     psd.getLayer("Card Name", con.layers['TEXT_AND_ICONS']),
                     psd.getLayer("Typeline", con.layers['TEXT_AND_ICONS']),

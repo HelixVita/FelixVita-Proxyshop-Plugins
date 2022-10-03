@@ -3,6 +3,22 @@ PHOTOSHOP HELPER FUNCTIONS
 """
 import os
 import photoshop.api as ps
+from PIL import ImageColor
+
+def rgb_hex(hex):
+    """
+    Creates a SolidColor object with the given hex value.
+    @param hex: Hexadecimal color value.
+    @return: SolidColor object.
+    """
+    hex = hex.lower()
+    if not hex.startswith('#'): hex = '#' + hex
+    color = ps.SolidColor()
+    r, g, b = ImageColor.getrgb(hex)
+    color.rgb.red = r
+    color.rgb.green = g
+    color.rgb.blue = b
+    return color
 
 # QOL Definitions
 cwd = os.getcwd()
