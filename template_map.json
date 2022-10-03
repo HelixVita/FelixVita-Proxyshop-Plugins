@@ -1,6 +1,7 @@
 {
 	"normal": {
 		"Ancient": "AncientTemplate",
-		"Modern": "ModernTemplate"
+		"Modern": "ModernTemplate",
+		"Normal Plus": "NormalPlusTemplate"
 	}
 }
