@@ -433,6 +433,7 @@ class ModernTemplate (temp.NormalTemplate):
     def __init__(self, layout):
         self.use_ccghq_set_symbols = True
         self.sets_to_use_ccghq_svgs_for = post_ancient_sets
+        self.use_timeshifted_symbol_for_non_ancient_sets = False
         self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
         self.sets_without_rarity = None
         self.sets_with_timeshifted_rarity = None
