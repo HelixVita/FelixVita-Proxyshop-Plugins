@@ -795,12 +795,18 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 if self.layout.set.upper() in ['LEA', 'LEB'] or (self.layout.background == "W" and self.layout.set.upper() in ['ARN', 'ATQ']):
                     # gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
                     gray = flx.rgb_hex("acb0bc")  # Gray for Alpha
+                    if self.layout.background == "W":
+                        gray = flx.rgb_hex("9a9eaa")  # Gray for Alpha
+                    # elif self.layout.background == "U":
+                    #     gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
+
                 white_text_layers = [
                     psd.getLayer("Card Name", con.layers['TEXT_AND_ICONS']),
                     psd.getLayer("Typeline", con.layers['TEXT_AND_ICONS']),
-                    psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']),
                     psd.getLayer("Artist", con.layers['LEGAL']),
                 ]
+                if self.is_creature:
+                    white_text_layers.append(psd.getLayer("Power / Toughness", con.layers['TEXT_AND_ICONS']))
                 for layer in white_text_layers:
                     layer.textItem.color = gray
                     if self.layout.set.upper() in ['LEA', 'LEB']:
