@@ -19,14 +19,16 @@ More info coming soon ...
 
     ![image](https://user-images.githubusercontent.com/102387379/191352722-b02ab966-e3b4-4a0f-86cb-b4ac2661af1f.png)
 
-1. Create a new folder named `FelixVita` inside the Proxyshop `templates` folder, then download the accompanying [ancient.psd](https://drive.google.com/file/d/1l5hNK160FQ57NR-EXD-9RzwWOMPmD7k8/view?usp=sharing) photoshop template, and place it there, like so:
+1. Create a new folder named `FelixVita` inside the Proxyshop `templates` folder, then download [these](https://drive.google.com/drive/folders/1EqmL85czp44qWXaSpmN-DSJk430ocMkN?usp=sharing) files and place them there, like so:
 
-    ![image](https://user-images.githubusercontent.com/102387379/191357327-b4f3dda4-e1bd-4260-8a2c-aa13ee3055b1.png)
+    ![image](https://user-images.githubusercontent.com/102387379/193914068-3e5020e9-c823-4f09-868d-c7a2c5a06c73.png)
 
 1. Create another new folder in `templates` named `CCGHQ`, then download the CCGHQ Set Symbol SVG files from [here](https://www.dropbox.com/sh/66vu99o8e4yo2vy/AAAijXj6WEoPbcn2Mxeafjzqa) and place them inside, so that the path looks like this:
 
     ![image](https://user-images.githubusercontent.com/102387379/191598378-3e36f318-6345-49e6-9be0-d210b594c387.png)
 
-1. Run Proxyshop. You should now see "Ancient" in the list of available templates. Enjoy!
+1. Run Proxyshop. You should now see "Ancient", "Modern", and "Normal Plus" in the list of available templates. Enjoy!
 
     ![image](https://user-images.githubusercontent.com/102387379/191357752-ebe486c1-59d9-480f-bb55-639ba64a7753.png)
+    
+
