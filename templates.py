@@ -393,6 +393,15 @@ class NormalPlusTemplate(temp.NormalTemplate):
         self.sets_without_rarity = None
         self.sets_with_timeshifted_rarity = None
         self.enable_text_copyleft_proxy_not_for_sale = normal_cfg["enable_text_copyleft_proxy_not_for_sale"]  # TODO: Add user config option for this
+        # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
+        with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
+            con.set_symbols = json.load(js)
+        # Automatic set symbol enabled?
+        if cfg.auto_symbol:
+            if layout.set in con.set_symbols:
+                layout.symbol = con.set_symbols[layout.set]
+            else: layout.symbol = cfg.symbol_char
+        else: layout.symbol = cfg.symbol_char
         super().__init__(layout)
 
     def enable_frame_layers(self):
@@ -457,6 +466,15 @@ class ModernTemplate (temp.NormalTemplate):
         self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
         self.sets_without_rarity = None
         self.sets_with_timeshifted_rarity = None
+        # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
+        with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
+            con.set_symbols = json.load(js)
+        # Automatic set symbol enabled?
+        if cfg.auto_symbol:
+            if layout.set in con.set_symbols:
+                layout.symbol = con.set_symbols[layout.set]
+            else: layout.symbol = cfg.symbol_char
+        else: layout.symbol = cfg.symbol_char
         super().__init__(layout)
 
     def enable_frame_layers(self):
