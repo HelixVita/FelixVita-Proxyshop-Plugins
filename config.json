@@ -9,6 +9,6 @@
     "use_1993_frame_for_applicable_sets": true
   },
   "NormalPlus": {
-    "enable_text_copyleft_proxy_not_for_sale": false
+    "enable_text_copyleft_proxy_not_for_sale": true
   }
 }
