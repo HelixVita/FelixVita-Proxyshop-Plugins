@@ -7,5 +7,8 @@
     "use_common_symbol_for_pre_exodus_sets": true,
     "use_timeshifted_symbol_for_non_ancient_sets": true,
     "use_1993_frame_for_applicable_sets": true
+  },
+  "NormalPlus": {
+    "enable_text_copyleft_proxy_not_for_sale": true
   }
 }

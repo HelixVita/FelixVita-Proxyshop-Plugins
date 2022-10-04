@@ -20,7 +20,7 @@ LOAD CONFIGURATION
 
 my_config = core.import_json_config(Path(Path(__file__).parent.resolve(), "config.json"))
 ancient_cfg = my_config['Ancient']
-
+normal_cfg = my_config['NormalPlus']
 
 """
 HELPER CONSTANTS
@@ -392,6 +392,7 @@ class NormalPlusTemplate(temp.NormalTemplate):
         self.use_timeshifted_symbol_for_non_ancient_sets = False
         self.sets_without_rarity = None
         self.sets_with_timeshifted_rarity = None
+        self.enable_text_copyleft_proxy_not_for_sale = normal_cfg["enable_text_copyleft_proxy_not_for_sale"]  # TODO: Add user config option for this
         super().__init__(layout)
 
     def enable_frame_layers(self):
@@ -408,6 +409,24 @@ class NormalPlusTemplate(temp.NormalTemplate):
             collector_layer = psd.getLayerSet(con.layers['COLLECTOR'], con.layers['LEGAL'])
             collector_top = psd.getLayer(con.layers['TOP_LINE'], collector_layer).textItem
             collector_top.contents = f"{self.layout.collector_number}          {self.layout.rarity_letter}"
+
+        if self.enable_text_copyleft_proxy_not_for_sale:
+            copyleft_dirpath = Path("templates", "FelixVita", "bscopyleft.psb")
+            app.activeDocument.activeLayer = psd.getLayer("Set", con.layers['LEGAL'])
+            emb = flx.place_embedded(str(copyleft_dirpath.resolve()))
+            psd.getLayer("Set", con.layers['LEGAL']).visible = False
+            vertical_ref = "Bottom" if self.is_creature else "Top"
+            psd.align_vertical(emb, psd.getLayer(vertical_ref, (con.layers['LEGAL'], con.layers['COLLECTOR']))); psd.clear_selection()
+            flx.convert_to_layers()
+            emb_group = psd.getLayer(f"{copyleft_dirpath.stem} - Smart Object Group", con.layers['LEGAL'])
+            emb_set = psd.getLayer("Set", emb_group)
+            try:
+                release_year = self.layout.scryfall['released_at'][:4] + " "
+            except:
+                release_year = ""
+            psd.replace_text(emb_set, "2015 ", release_year)
+            psd.align("AdRg", emb_group, psd.getLayer("Textbox Reference", "Text and Icons")); psd.clear_selection()
+
 
 """
 MODERN TEMPLATE
