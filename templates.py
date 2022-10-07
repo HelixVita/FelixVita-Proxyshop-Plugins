@@ -507,15 +507,7 @@ class ModernTemplate (temp.NormalTemplate):
         self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
         self.sets_without_rarity = None
         self.sets_with_timeshifted_rarity = None
-        # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
-        with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
-            con.set_symbols = json.load(js)
-        # Automatic set symbol enabled?
-        if cfg.auto_symbol:
-            if layout.set in con.set_symbols:
-                layout.symbol = con.set_symbols[layout.set]
-            else: layout.symbol = cfg.symbol_char
-        else: layout.symbol = cfg.symbol_char
+        import_custom_symbols_json(layout)
         super().__init__(layout)
 
     def enable_frame_layers(self):
@@ -560,20 +552,10 @@ class AncientTemplate (temp.NormalClassicTemplate):
         self.sets_with_timeshifted_rarity = post_ancient_sets if self.use_timeshifted_symbol_for_non_ancient_sets else None
         self.sets_without_rarity = pre_exodus_sets + ["POR", "P02"] if self.use_common_symbol_for_pre_exodus_sets else None
 
-        # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
-        with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
-            con.set_symbols = json.load(js)
-        # Automatic set symbol enabled?
-        if cfg.auto_symbol:
-            if layout.set in con.set_symbols:
-                layout.symbol = con.set_symbols[layout.set]
-            else: layout.symbol = cfg.symbol_char
-        else: layout.symbol = cfg.symbol_char
+        import_custom_symbols_json(layout)
 
         super().__init__(layout)
-        # Use alternate expansion symbol for ICE (ss-ice2 instead of ss-ice)
-        if layout.set.upper() == "ICE":
-            layout.symbol = ""
+
         # For Portal sets, use bold rules text and flavor divider:
         if layout.set.upper() in ["POR", "P02", "PTK", "S99"]:
             con.font_rules_text = "MPlantin-Bold"
