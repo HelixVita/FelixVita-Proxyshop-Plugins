@@ -1,6 +1,7 @@
 """
 FELIXVITA's TEMPLATES
 """
+from proxyshop.gui import console_handler as console
 import proxyshop.templates as temp
 from proxyshop.constants import con
 from proxyshop.settings import cfg
@@ -178,6 +179,7 @@ def felix_set_symbol_logic(self):
                     self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior
                     )):
                 try:
+                    if not cfg.dev_mode: console.update("Attempting use CCGHQ set symbol...")
                     set_symbol_layer = load_symbol_svg(self, self.sets_without_rarity, self.sets_with_timeshifted_rarity)
                     skip_symbol_formatting(self)
                     reassign_symbol_reference(self, set_symbol_layer)
@@ -185,6 +187,7 @@ def felix_set_symbol_logic(self):
                     frame_set_symbol_layer(set_symbol_layer)
                     apply_set_specific_svg_symbol_adjustments(self, set_symbol_layer)
                 except:
+                    if not cfg.dev_mode: console.update("CCGHQ SVG failed to load. Defaulting to regular Proxyshop approach...")
                     pass
             else:
                 # frame_set_symbol_layer(self, expansion_symbol)
@@ -449,6 +452,31 @@ class NormalPlusTemplate(temp.NormalTemplate):
         if self.enable_text_copyleft_proxy_not_for_sale:
             normalplus_bscopyleft(self)
 
+class MiraclePlusTemplate(temp.MiracleTemplate):
+    """
+    FelixVita's NormalPlus template, but for Miracle cards.
+    """
+    template_file_name = "miracle"
+
+    def __init__(self, layout):
+        self.use_ccghq_set_symbols = True
+        self.sets_to_use_ccghq_svgs_for = [set for set in post_ancient_sets if set not in ["AFC", "MID", "CLB", "NCC"]]
+        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
+        self.use_timeshifted_symbol_for_non_ancient_sets = False
+        self.sets_without_rarity = None
+        self.sets_with_timeshifted_rarity = None
+        self.enable_text_copyleft_proxy_not_for_sale = normal_cfg["enable_text_copyleft_proxy_not_for_sale"]
+        import_custom_symbols_json(layout)
+        super().__init__(layout)
+
+    def basic_text_layers(self, text_and_icons):
+        super().basic_text_layers(text_and_icons)
+        felix_set_symbol_logic(self)
+
+    def post_text_layers(self):
+        normalplus_collector_fix(self)
+        if self.enable_text_copyleft_proxy_not_for_sale:
+            normalplus_bscopyleft(self)
 
 """
 MODERN TEMPLATE
