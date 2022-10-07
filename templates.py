@@ -221,6 +221,19 @@ def load_symbol_svg(self, sets_without_rarity: list = None, sets_with_timeshifte
     set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))
     return set_symbol_layer
 
+def import_custom_symbols_json(layout):
+    """
+    Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
+    """
+    with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
+        con.set_symbols = json.load(js)
+    # Automatic set symbol enabled?
+    if cfg.auto_symbol:
+        if layout.set in con.set_symbols:
+            layout.symbol = con.set_symbols[layout.set]
+        else: layout.symbol = cfg.symbol_char
+    else: layout.symbol = cfg.symbol_char
+
 def skip_symbol_formatting(self):
     """ Skip the default Proxyshop symbol formatting (stroke, fill, etc.) """
     self.tx_layers = [_ for _ in self.tx_layers if not isinstance(_, ExpansionSymbolField)]
@@ -243,6 +256,37 @@ def frame_set_symbol_layer(set_symbol_layer):
     # psd.frame_layer(font_symbol, expansion_reference, anchor=ps.AnchorPosition.MiddleRight, smallest=True, align_h=True, align_v=True)
     print("Debug breakpoint here")
 
+def normalplus_collector_fix(self):
+    """
+    Fix for issue where cardnum > card_count in collector's info.
+    While arguably an improvement, this fix is still a bit heavy-handed, as it will also affect cards like [[Super Secret Tech (UNH)]] which ARE supposed to have a cardnum > card_count.
+    Intended only for use with templates using the M15 frame.
+    """
+    if int(self.layout.collector_number) > int(self.layout.card_count):
+        collector_layer = psd.getLayerSet(con.layers['COLLECTOR'], con.layers['LEGAL'])
+        collector_top = psd.getLayer(con.layers['TOP_LINE'], collector_layer).textItem
+        collector_top.contents = self.layout.collector_number + 10 * " " + self.layout.rarity_letter
+
+def normalplus_bscopyleft(self):
+    """
+    Adds a "BS & Copyleft" copyright line to the bottom right of the card, for a slightly more authentic look at a glance.
+    Intended only for use with templates using the M15 frame.
+    """
+    copyleft_dirpath = Path("templates", "FelixVita", "bscopyleft.psb")
+    app.activeDocument.activeLayer = psd.getLayer("Set", con.layers['LEGAL'])
+    emb = flx.place_embedded(str(copyleft_dirpath.resolve()))
+    psd.getLayer("Set", con.layers['LEGAL']).visible = False
+    vertical_ref = "Bottom" if self.is_creature else "Top"
+    psd.align_vertical(emb, psd.getLayer(vertical_ref, (con.layers['LEGAL'], con.layers['COLLECTOR']))); psd.clear_selection()
+    flx.convert_to_layers()
+    emb_group = psd.getLayer(f"{copyleft_dirpath.stem} - Smart Object Group", con.layers['LEGAL'])
+    emb_set = psd.getLayer("Set", emb_group)
+    try:
+        release_year = self.layout.scryfall['released_at'][:4] + " "
+    except:
+        release_year = ""
+    psd.replace_text(emb_set, "2015 ", release_year)
+    psd.align("AdRg", emb_group, psd.getLayer("Textbox Reference", "Text and Icons")); psd.clear_selection()
 
 
 """
@@ -392,49 +436,18 @@ class NormalPlusTemplate(temp.NormalTemplate):
         self.use_timeshifted_symbol_for_non_ancient_sets = False
         self.sets_without_rarity = None
         self.sets_with_timeshifted_rarity = None
-        self.enable_text_copyleft_proxy_not_for_sale = normal_cfg["enable_text_copyleft_proxy_not_for_sale"]  # TODO: Add user config option for this
-        # Replace the imported contents of symbols.json with that of plugins/FelixVita/symbols.json
-        with open(Path(Path(__file__).parent.resolve(), "symbols.json"), "r", encoding="utf-8-sig") as js:
-            con.set_symbols = json.load(js)
-        # Automatic set symbol enabled?
-        if cfg.auto_symbol:
-            if layout.set in con.set_symbols:
-                layout.symbol = con.set_symbols[layout.set]
-            else: layout.symbol = cfg.symbol_char
-        else: layout.symbol = cfg.symbol_char
+        self.enable_text_copyleft_proxy_not_for_sale = normal_cfg["enable_text_copyleft_proxy_not_for_sale"]
+        import_custom_symbols_json(layout)
         super().__init__(layout)
-
-    def enable_frame_layers(self):
-        super().enable_frame_layers()
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
         felix_set_symbol_logic(self)
 
     def post_text_layers(self):
-        # Fix for issue where cardnum > card_count in collector's info.
-        # While arguably an improvement, this fix is still a bit heavy-handed, as it will also affect cards like [[Super Secret Tech (UNH)]] which ARE supposed to have a cardnum > card_count.
-        if int(self.layout.collector_number) > int(self.layout.card_count):
-            collector_layer = psd.getLayerSet(con.layers['COLLECTOR'], con.layers['LEGAL'])
-            collector_top = psd.getLayer(con.layers['TOP_LINE'], collector_layer).textItem
-            collector_top.contents = f"{self.layout.collector_number}          {self.layout.rarity_letter}"
-
+        normalplus_collector_fix(self)
         if self.enable_text_copyleft_proxy_not_for_sale:
-            copyleft_dirpath = Path("templates", "FelixVita", "bscopyleft.psb")
-            app.activeDocument.activeLayer = psd.getLayer("Set", con.layers['LEGAL'])
-            emb = flx.place_embedded(str(copyleft_dirpath.resolve()))
-            psd.getLayer("Set", con.layers['LEGAL']).visible = False
-            vertical_ref = "Bottom" if self.is_creature else "Top"
-            psd.align_vertical(emb, psd.getLayer(vertical_ref, (con.layers['LEGAL'], con.layers['COLLECTOR']))); psd.clear_selection()
-            flx.convert_to_layers()
-            emb_group = psd.getLayer(f"{copyleft_dirpath.stem} - Smart Object Group", con.layers['LEGAL'])
-            emb_set = psd.getLayer("Set", emb_group)
-            try:
-                release_year = self.layout.scryfall['released_at'][:4] + " "
-            except:
-                release_year = ""
-            psd.replace_text(emb_set, "2015 ", release_year)
-            psd.align("AdRg", emb_group, psd.getLayer("Textbox Reference", "Text and Icons")); psd.clear_selection()
+            normalplus_bscopyleft(self)
 
 
 """
