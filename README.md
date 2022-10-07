@@ -44,13 +44,15 @@ The _Normal Plus_ plugin just adds some extra features to the default "Normal" t
 
 Note that the _Normal Plus_ plugin has no accompanying custom photoshop template. It simply uses your existing `normal.psd` file. That said, if you wish to use the feature `enable_text_copyleft_proxy_not_for_sale` to place a "mock copyright" in the bottom right corner, then make sure you remember to download `bscopyleft.psb` (as explained in the instructions below).
 
-#### Normal Plus: Miracle Class
+### Normal Plus: Additional card classes
+
+#### Miracle Plus
 
 The _Miracle Plus_ plugin does the exact same thing for the existing _Miracle_ template as _Normal Plus_ does for the _Normal_ template.
 
 ## Instructions
 
-1. Make sure you are using the right version of Proxyshop. The FelixVita-Proxyshop-Plugins are compatible with [Proxyshop v1.1.8](https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.8)
+_Before you begin, make sure you are using the right version of Proxyshop. The FelixVita-Proxyshop-Plugins are compatible with [Proxyshop v1.1.8](https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.8)._
 
 1. Go to the latest release of the plugin [here](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/releases/latest) and download it by clicking `Source code (zip)` (under "Assets").
 
