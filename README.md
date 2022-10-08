@@ -52,7 +52,11 @@ The _Miracle Plus_ plugin does the exact same thing for the existing _Miracle_ t
 
 # Instructions
 
-_Before you begin, make sure you are using the right version of Proxyshop. The FelixVita-Proxyshop-Plugins are compatible with [Proxyshop v1.1.8](https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.8)._
+### Prerequisites
+
+Before you begin, make sure you are using the right version of Proxyshop. The FelixVita-Proxyshop-Plugins are compatible with [Proxyshop v1.1.8](https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.8)
+
+### Installing the FelixVita plugin package
 
 1. Go to the latest release of the plugin [here](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/releases/latest) and download it by clicking `Source code (zip)` (under "Assets").
 
