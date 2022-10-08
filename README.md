@@ -50,7 +50,7 @@ Note that the _Normal Plus_ plugin has no accompanying custom photoshop template
 
 The _Miracle Plus_ plugin does the exact same thing for the existing _Miracle_ template as _Normal Plus_ does for the _Normal_ template.
 
-## Instructions
+# Instructions
 
 _Before you begin, make sure you are using the right version of Proxyshop. The FelixVita-Proxyshop-Plugins are compatible with [Proxyshop v1.1.8](https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.8)._
 
