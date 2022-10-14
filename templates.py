@@ -279,7 +279,6 @@ def _apply_custom_collector(self, set_layer):
     2004 Proxy • Not for Sale • DST 140/165 U
     If any collector info is missing, it will simply be omitted.
     """
-    # TODO: Add support for custom user-defined collector info
     # Try to obtain release year
     try:
         release_year = self.layout.scryfall['released_at'][:4]
@@ -596,12 +595,6 @@ NORMALPLUS TEMPLATE
 # TODO: Improve set symbol faithfulness for the following sets:
 # AFC: The color inside should be white, not black, for cards like [[Mind Stone]]
 
-# TODO: Add "BS & Copyleft" copyright line (preferably without modifying the psd file)
-# Perhaps you can use the photoshop api to generate some text fields
-# and then use the layers top-collector and Expansion Symbol as vertical and horizontal alignment guides, respectively.
-# On second thought, it's probably easier to pre-render the text to an SVG and then use load_svg to add it to the normal.psd file (then align as described above).
-
-
 class NormalPlusTemplate(temp.NormalTemplate):
     """
     FelixVita's minor modifications to MrTeferi's Normal template.
@@ -847,7 +840,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
         else:
             # Center-align the collector info
-            # TODO: Put ancient.psd layers back centered as they were, and change order of Set and "BS & Copyleft" layers in the PSD
             tref = psd.getLayer("Textbox Reference", con.layers['TEXT_AND_ICONS'])
             coll_combo = psd.merge_layers(collector_layer, tmc)
             psd.align("AdCH", coll_combo, tref); psd.clear_selection()
