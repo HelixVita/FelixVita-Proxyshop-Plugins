@@ -1,14 +1,23 @@
 {
-  "Ancient": {
+  "Global": {
     "smart_tombstone": true,
+    "flavor_divider": "auto",
+    "use_legendary_crown_on_legendary_cards": "auto",
+    "use_set_symbol": "auto",
+    "use_ccghq_set_symbols": "auto",
+    "use_ccghq_set_symbol_rarity_color": "auto",
+    "use_ccghq_timeshifted_rarity_color": "auto",
     "thicker_collector_info": false,
-    "use_ccghq_set_symbols": true,
-    "force_use_ccghq_set_symbols_even_when_aesthetically_inferior": false,
-    "use_common_symbol_for_pre_exodus_sets": true,
-    "use_timeshifted_symbol_for_non_ancient_sets": true,
-    "use_1993_frame_for_applicable_sets": true
+    "enable_mock_copyright": true
   },
-  "NormalPlus": {
-    "enable_text_copyleft_proxy_not_for_sale": true
+  "Ancient": {
+    "use_1993_frame": "auto",
+    "custom_collector_string": "<PrintYear> Proxy * Not for Sale * <Set> <CollectorNumber>/<CardCount> <Rarity>"
+  },
+  "Modern": {
+    "custom_collector_string": "<PrintYear> Proxy * Not for Sale * <Set> <CollectorNumber>/<CardCount> <Rarity>"
+  },
+  "Normal": {
+    "custom_collector_string": "<PrintYear> Proxy * Not for Sale"
   }
 }

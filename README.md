@@ -44,9 +44,15 @@ The _Normal Plus_ plugin just adds some extra features to the default "Normal" t
 
 Note that the _Normal Plus_ plugin has no accompanying custom photoshop template. It simply uses your existing `normal.psd` file. That said, if you wish to use the feature `enable_text_copyleft_proxy_not_for_sale` to place a "mock copyright" in the bottom right corner, then make sure you remember to download `bscopyleft.psb` (as explained in the instructions below).
 
-#### Normal Plus: Miracle Class
+#### Normal Plus Class: Miracle
 
 The _Miracle Plus_ plugin does the exact same thing for the existing _Miracle_ template as _Normal Plus_ does for the _Normal_ template.
+
+#### Normal Plus Class: Invention
+
+The _Invention Bronze Plus_ plugin does the exact same thing for the existing _Invention Bronze_ template as _Normal Plus_ does for the _Normal_ template.
+
+Additionally, it adds the orange gradient in the rules text box — a visual element which (as of 2022-Oct-14) is still missing from the current masterpiece.psd template.
 
 ## Instructions
 

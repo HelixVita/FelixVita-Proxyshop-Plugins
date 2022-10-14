@@ -3,6 +3,7 @@
 		"Ancient": "AncientTemplate",
 		"Modern": "ModernTemplate",
 		"Normal Plus": "NormalPlusTemplate",
-		"Miracle Plus": "MiraclePlusTemplate"
+		"Miracle Plus": "MiraclePlusTemplate",
+		"Invention Bronze Plus": "InventionPlusTemplate"
 	}
 }

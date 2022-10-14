@@ -1,7 +1,7 @@
 """
 FELIXVITA's TEMPLATES
 """
-from proxyshop.gui import console_handler as console
+from proxyshop.gui import ConsoleOutput, console_handler as console
 import proxyshop.templates as temp
 from proxyshop.constants import con
 from proxyshop.settings import cfg
@@ -13,15 +13,6 @@ from pathlib import Path
 from proxyshop.text_layers import ExpansionSymbolField, TextField  # For type hinting
 import felix_helpers as flx
 import json
-
-"""
-LOAD CONFIGURATION
-"""
-
-
-my_config = core.import_json_config(Path(Path(__file__).parent.resolve(), "config.json"))
-ancient_cfg = my_config['Ancient']
-normal_cfg = my_config['NormalPlus']
 
 """
 HELPER CONSTANTS
@@ -66,6 +57,8 @@ pre_atq_sets = list_of_all_mtg_sets[:list_of_all_mtg_sets.index("ATQ")]
 
 post_ancient_sets = list_of_all_mtg_sets[list_of_all_mtg_sets.index("8ED"):]
 
+pre_dominaria_sets = list_of_all_mtg_sets[:list_of_all_mtg_sets.index("DDU")]
+
 sets_without_set_symbol = [
     "LEA",
     "LEB",
@@ -74,6 +67,8 @@ sets_without_set_symbol = [
     "4ED",
     "5ED",
 ]
+
+sets_without_rarity = pre_exodus_sets + ["POR", "P02"]
 
 sets_with_hollow_set_symbol = [
     "6ED",
@@ -127,21 +122,164 @@ original_dual_lands = [
     "Tropical Island",
 ]
 
+portal_frame_sets = ["POR", "P02", "PTK", "S99"]
+
 all_keyrune_pre_eighth_symbols_for_debugging = ""
+
+ancient_sets_with_felix_approved_ccghq_symbols = ["ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"]
+
+felix_rejected_ccghq_symbols = ["AFC", "MID", "CLB", "NCC"]
+
+"""
+LOAD CONFIGURATION
+"""
+
+config_json = core.import_json_config(Path(Path(__file__).parent.resolve(), "config.json"))
+
+# Defaults for auto
+if config_json['Global']['thicker_collector_info'] == "auto":
+    config_json['Global']['thicker_collector_info'] = False
+if config_json['Global']['enable_mock_copyright'] == "auto":
+    config_json['Global']['enable_mock_copyright'] = True
+if config_json['Global']['smart_tombstone'] == "auto":
+    config_json['Global']['smart_tombstone'] = True
+if config_json['Global']['use_legendary_crown_on_legendary_cards'] == "auto" or False:
+   console.update("WARNING: Disabling of legendary crown is not yet implemented. Consider voting for this issue at https://github.com/MrTeferi/MTG-Proxyshop/issues/18")
+
+def decision_to_use_flavor_divider(self, layout):
+    user_input = self.config_json['Global']['flavor_divider']
+    if isinstance(user_input, bool):
+        return user_input
+    if  user_input == "auto":
+        if layout.set.upper() in portal_frame_sets:
+            return True
+        elif layout.set.upper() in pre_modern_sets:
+            return False
+        elif layout.set.upper() in pre_dominaria_sets:
+            return False
+        elif Path(self.template_file_name).stem in["modern", "ancient"]:
+            return False
+        else:
+            return True
+
+def decision_to_have_legendary_crown(self):
+    user_input = self.config_json['Global']['use_legendary_crown_on_legendary_cards']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        return self.layout.set.upper() not in pre_dominaria_sets
+
+def decision_to_use_ccghq_symbol(self):
+    user_input = self.config_json['Global']['use_ccghq_set_symbols']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        if self.layout.set.upper() in pre_modern_sets:
+            return self.layout.set.upper() in ancient_sets_with_felix_approved_ccghq_symbols
+        else:
+            return self.layout.set.upper() not in felix_rejected_ccghq_symbols
+
+def decision_to_have_set_symbol(self):
+    user_input = self.config_json['Global']['use_set_symbol']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        return self.layout.set.upper() not in sets_without_set_symbol
+
+def decision_to_use_ccghq_symbol_rarity(self):
+    user_input = self.config_json['Global']['use_ccghq_set_symbol_rarity_color']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        return self.layout.set.upper() not in sets_without_rarity
+
+def decision_to_use_timeshifted_rarity_for_ccghq(self):
+    user_input = self.config_json['Global']['use_ccghq_timeshifted_rarity_color']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        if Path(self.template_file_name).stem == "ancient":
+            return self.layout.set.upper() in post_ancient_sets
+        else:
+            return False
+
+def decision_to_use_1993_frame(self):
+    user_input = self.config_json['Ancient']['use_1993_frame']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        return self.layout.set.upper() in pre_mirage_sets
 
 
 """
 HELPER FUNCTIONS
 """
 
-def apply_custom_collector(self, set_layer):
+def apply_custom_collector(self, set_layer, userstring: str = None):
+    """
+    Applies collector's info to the set layer, in a user-defined format, using a mix of variables and free text.
+    The variables are:
+    <PrintYear>
+    <Set>
+    <CollectorNumber>
+    <CardCount>
+    <Rarity>
+    For example:
+    "<PrintYear> Proxy • Not for Sale • <Set> <CollectorNumber>/<CardCount> <Rarity>"
+    Will produce something like:
+    2004 Proxy • Not for Sale • DST 140/165 U
+    If any collector info is missing, it will simply be omitted.
+    """
+    # Set default userstring if none is provided
+    if not userstring:
+        userstring = ""
+    # Retrieve collector's info if it exists
+    if "<PrintYear>" in userstring:
+        try:
+            PrintYear = self.layout.scryfall['released_at'][:4]
+        except:
+            PrintYear = ""
+        userstring = userstring.replace("<PrintYear>", PrintYear)
+    if "<Set>" in userstring:
+        try:
+            Set = self.layout.set
+        except:
+            Set = ""
+        userstring = userstring.replace("<Set>", Set)
+    if "<CollectorNumber>" in userstring:
+        try:
+            CollectorNumber = str(self.layout.collector_number).lstrip("0")
+        except:
+            CollectorNumber = ""
+        userstring = userstring.replace("<CollectorNumber>", CollectorNumber)
+    if "<CardCount>" in userstring:
+        try:
+            CardCount = str(self.layout.card_count).lstrip("0")
+        except:
+            CardCount = ""
+        userstring = userstring.replace("<CardCount>", CardCount)
+    if "<Rarity>" in userstring:
+        try:
+            Rarity = self.layout.rarity_letter
+        except:
+            Rarity = ""
+        userstring = userstring.replace("<Rarity>", Rarity)
+    # Get rid of all leading, trailing, and double spaces in userstring
+    userstring = " ".join(userstring.split()).lstrip().rstrip()
+    # Replace asterisks with thick dots
+    userstring = userstring.replace("*", "•")
+    # Apply the collector info
+    set_layer.textItem.contents = userstring
+
+def _apply_custom_collector(self, set_layer):
     """
     Applies collector's info to the set layer, in the FelixVita custom format:
-    <PrintYear> Proxy • Not for Sale • <SET> <CollectorNumber>/<CardCount> <Rarity>
+    <PrintYear> Proxy • Not for Sale • <Set> <CollectorNumber>/<CardCount> <Rarity>
     For example:
     2004 Proxy • Not for Sale • DST 140/165 U
     If any collector info is missing, it will simply be omitted.
     """
+    # TODO: Add support for custom user-defined collector info
     # Try to obtain release year
     try:
         release_year = self.layout.scryfall['released_at'][:4]
@@ -170,17 +308,17 @@ def left_align_artist_and_collector(self):
 def felix_set_symbol_logic(self):
     if not hasattr(self, "expansion_disabled") or (hasattr(self, "expansion_disabled") and self.expansion_disabled == False):
         expansion_symbol = psd.getLayer(con.layers['EXPANSION_SYMBOL'], con.layers['TEXT_AND_ICONS'])
-        if self.layout.set.upper() in sets_without_set_symbol:
+        if decision_to_have_set_symbol(self) is False:
             skip_symbol_formatting(self)
             expansion_symbol.visible = False
         else:
-            if (self.use_ccghq_set_symbols and (
-                    self.layout.set.upper() in self.sets_to_use_ccghq_svgs_for or
-                    self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior
-                    )):
+            if decision_to_use_ccghq_symbol(self):
                 try:
-                    if not cfg.dev_mode: console.update("Attempting use CCGHQ set symbol...")
-                    set_symbol_layer = load_symbol_svg(self, self.sets_without_rarity, self.sets_with_timeshifted_rarity)
+                    if not cfg.dev_mode:
+                        console.update("Attempting use CCGHQ set symbol...")
+                    use_common_rarity_color = not decision_to_use_ccghq_symbol_rarity(self)
+                    use_timeshifted_rarity_color = decision_to_use_timeshifted_rarity_for_ccghq(self)
+                    set_symbol_layer = load_symbol_svg(self, use_common_rarity_color, use_timeshifted_rarity_color)
                     skip_symbol_formatting(self)
                     reassign_symbol_reference(self, set_symbol_layer)
                     expansion_symbol.visible = False
@@ -193,7 +331,7 @@ def felix_set_symbol_logic(self):
                 # frame_set_symbol_layer(self, expansion_symbol)
                 apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol)
 
-def load_symbol_svg(self, sets_without_rarity: list = None, sets_with_timeshifted_rarity: list = None):
+def load_symbol_svg(self, no_rarity: bool = False, timeshifted: bool = False):
     # Get rarity
     ccghq_rarity_abbreviations = {
         "Common": "C",
@@ -207,10 +345,10 @@ def load_symbol_svg(self, sets_without_rarity: list = None, sets_with_timeshifte
         "Masterpiece": "M",
     }
     svg_rarity = ccghq_rarity_abbreviations[self.layout.rarity.title()]
-    if sets_without_rarity and self.layout.set.upper() in sets_without_rarity:
-            svg_rarity = "C"
-    if sets_with_timeshifted_rarity and self.layout.set.upper() in post_ancient_sets:
-            svg_rarity = "T"
+    if no_rarity:
+        svg_rarity = "C"
+    if timeshifted:
+        svg_rarity = "T"
     # Load custom set symbol SVG
     symbols_dirpath = Path("templates", "CCGHQ", "Magic the Gathering Vectors", "Set symbols")
     svg_path = Path(symbols_dirpath, self.layout.set.upper(), svg_rarity + ".svg")
@@ -270,11 +408,16 @@ def normalplus_collector_fix(self):
         collector_top = psd.getLayer(con.layers['TOP_LINE'], collector_layer).textItem
         collector_top.contents = self.layout.collector_number + 10 * " " + self.layout.rarity_letter
 
-def normalplus_bscopyleft(self):
+def normalplus_bottom_right_text(self):
     """
     Adds a "BS & Copyleft" copyright line to the bottom right of the card, for a slightly more authentic look at a glance.
+    The line includes the release year of the set (if available), which is useful as a piece of collector's info.
     Intended only for use with templates using the M15 frame.
     """
+    custom_collector_string = self.config_json['Normal']['custom_collector_string']
+    enable_mock_copyright = self.config_json['Global']['enable_mock_copyright']
+    if not custom_collector_string and not enable_mock_copyright:
+        return
     copyleft_dirpath = Path("templates", "FelixVita", "bscopyleft.psb")
     app.activeDocument.activeLayer = psd.getLayer("Set", con.layers['LEGAL'])
     emb = flx.place_embedded(str(copyleft_dirpath.resolve()))
@@ -284,13 +427,50 @@ def normalplus_bscopyleft(self):
     flx.convert_to_layers()
     emb_group = psd.getLayer(f"{copyleft_dirpath.stem} - Smart Object Group", con.layers['LEGAL'])
     emb_set = psd.getLayer("Set", emb_group)
-    try:
-        release_year = self.layout.scryfall['released_at'][:4] + " "
-    except:
-        release_year = ""
-    psd.replace_text(emb_set, "2015 ", release_year)
+    # disable mock copyright if disabled in config.json
+    if not enable_mock_copyright:
+        tmc = psd.getLayer("BS & Copyleft", emb_group)
+        psd.getLayer("BS &", tmc).visible = False
+        psd.getLayer("Copyleft", tmc).visible = False
+    apply_custom_collector(self, emb_set, userstring=custom_collector_string)
     psd.align("AdRg", emb_group, psd.getLayer("Textbox Reference", "Text and Icons")); psd.clear_selection()
 
+def inventionplus_rules_box_gradient_fix():
+    """
+    Places an orange gradient inside the rules box.
+    This is intended to be used for Kaladesh Invention cards, since the current "masterpiece.psd" file doesn't have one.
+    """
+    orange_path = Path("templates", "FelixVita", "mps_rules_box_orange_gradient.psb")
+    app.activeDocument.activeLayer = psd.getLayer("Shadows")
+    emb = flx.place_embedded(str(orange_path.resolve()))
+    flx.convert_to_layers()
+    emb_group = psd.getLayer(f"{orange_path.stem}")
+    psd.getLayer("CanvasSize", emb_group).visible = False
+
+def tombstone_decision_matrix(self) -> bool:
+    decision = (
+        ("Aftermath" in self.layout.keywords) or  # TODO: Test this once split cards is implemented
+        ("Disturb" in self.layout.keywords) or  # TODO: Test this once sun-moon MDFCs are implemented
+        ("Dredge" in self.layout.keywords) or
+        ("Embalm" in self.layout.keywords) or
+        ("Encore" in self.layout.keywords) or
+        ("Escape" in self.layout.keywords) or
+        ("Eternalize" in self.layout.keywords) or
+        ("Flashback" in self.layout.keywords) or  # Example: True for "Faithless looting", but not for "Snapcaster Mage"
+        ("Jump-start" in self.layout.keywords) or
+        ("Recover" in self.layout.keywords) or
+        ("Retrace" in self.layout.keywords) or
+        ("Scavenge" in self.layout.keywords) or
+        ("Unearth" in self.layout.keywords) or
+        (f"{self.layout.card_name_raw} is in your graveyard" in self.layout.oracle_text_raw) or
+        (f"return {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+        (f"exile {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+        (f"cast {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+        (f"put {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+        (f"combine {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
+        (self.layout.card_name_raw in ["Nether Spirit", "Skyblade's Boon"])
+        )
+    return decision
 
 """
 HELPERS FOR SET-SPECIFIC SYMBOL ADJUSTMENTS
@@ -371,7 +551,7 @@ def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
         psd.apply_stroke(svg_symbol, 4, psd.rgb_white())
     if self.layout.set.upper() in ["INV"]:
         psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
-    if self.layout.set in post_ancient_sets and self.use_timeshifted_symbol_for_non_ancient_sets:
+    if self.layout.set in post_ancient_sets and decision_to_use_timeshifted_rarity_for_ccghq(self):
         psd.apply_stroke(svg_symbol, 5, psd.rgb_white())
     # Resize
     if self.layout.set.upper() in ["NEM", "MMQ", "EXO", "LGN"]:
@@ -411,7 +591,7 @@ def unhide(psdpath: tuple, is_group=False):
 
 
 """
-POSTMODERN TEMPLATE
+NORMALPLUS TEMPLATE
 """
 # TODO: Improve set symbol faithfulness for the following sets:
 # AFC: The color inside should be white, not black, for cards like [[Mind Stone]]
@@ -433,15 +613,12 @@ class NormalPlusTemplate(temp.NormalTemplate):
     template_suffix = "NormalPlus"
 
     def __init__(self, layout):
-        self.use_ccghq_set_symbols = True
-        self.sets_to_use_ccghq_svgs_for = [set for set in post_ancient_sets if set not in ["AFC", "MID", "CLB", "NCC"]]
-        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
-        self.use_timeshifted_symbol_for_non_ancient_sets = False
-        self.sets_without_rarity = None
-        self.sets_with_timeshifted_rarity = None
-        self.enable_text_copyleft_proxy_not_for_sale = normal_cfg["enable_text_copyleft_proxy_not_for_sale"]
+        self.config_json = config_json
         import_custom_symbols_json(layout)
+        cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
+        # if not decision_to_use_flavor_divider(self, layout):
+        #     psd.getLayer(con.layers['DIVIDER'], "Text and Icons").remove()
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
@@ -449,8 +626,7 @@ class NormalPlusTemplate(temp.NormalTemplate):
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
-        if self.enable_text_copyleft_proxy_not_for_sale:
-            normalplus_bscopyleft(self)
+        normalplus_bottom_right_text(self)
 
 class MiraclePlusTemplate(temp.MiracleTemplate):
     """
@@ -459,14 +635,9 @@ class MiraclePlusTemplate(temp.MiracleTemplate):
     template_file_name = "miracle"
 
     def __init__(self, layout):
-        self.use_ccghq_set_symbols = True
-        self.sets_to_use_ccghq_svgs_for = [set for set in post_ancient_sets if set not in ["AFC", "MID", "CLB", "NCC"]]
-        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
-        self.use_timeshifted_symbol_for_non_ancient_sets = False
-        self.sets_without_rarity = None
-        self.sets_with_timeshifted_rarity = None
-        self.enable_text_copyleft_proxy_not_for_sale = normal_cfg["enable_text_copyleft_proxy_not_for_sale"]
+        self.config_json = config_json
         import_custom_symbols_json(layout)
+        cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
 
     def basic_text_layers(self, text_and_icons):
@@ -475,8 +646,30 @@ class MiraclePlusTemplate(temp.MiracleTemplate):
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
-        if self.enable_text_copyleft_proxy_not_for_sale:
-            normalplus_bscopyleft(self)
+        normalplus_bottom_right_text(self)
+
+class InventionPlusTemplate(temp.InventionTemplate):
+    """
+    FelixVita's NormalPlus template, but for Kaladesh Invention cards.
+    """
+    template_file_name = "masterpiece.psd"
+    template_suffix = "Masterpiece"
+
+    def __init__(self, layout):
+        self.config_json = config_json
+        import_custom_symbols_json(layout)
+        cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
+        super().__init__(layout)
+        inventionplus_rules_box_gradient_fix()
+
+
+    def basic_text_layers(self, text_and_icons):
+        super().basic_text_layers(text_and_icons)
+        felix_set_symbol_logic(self)
+
+    def post_text_layers(self):
+        normalplus_collector_fix(self)
+        normalplus_bottom_right_text(self)
 
 """
 MODERN TEMPLATE
@@ -484,7 +677,7 @@ MODERN TEMPLATE
 # TODO: Improve set symbol faithfulness for the following sets:
 # THS: Stroke should be white, not black.
 # BNG: Stroke should be white, not black.
-
+# Add tombstone icon (some modern cards do actually have it)
 
 
 class ModernTemplate (temp.NormalTemplate):
@@ -501,13 +694,9 @@ class ModernTemplate (temp.NormalTemplate):
     template_suffix = "Modern"
 
     def __init__(self, layout):
-        self.use_ccghq_set_symbols = True
-        self.sets_to_use_ccghq_svgs_for = post_ancient_sets
-        self.use_timeshifted_symbol_for_non_ancient_sets = False
-        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = False
-        self.sets_without_rarity = None
-        self.sets_with_timeshifted_rarity = None
+        self.config_json = config_json
         import_custom_symbols_json(layout)
+        cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
 
     def enable_frame_layers(self):
@@ -519,7 +708,7 @@ class ModernTemplate (temp.NormalTemplate):
         artist_layer = psd.getLayer(con.layers['ARTIST'], self.legal_layer)
 
         # Fill set info / artist info
-        apply_custom_collector(self, set_layer)
+        apply_custom_collector(self, set_layer, userstring=self.config_json['Modern']['custom_collector_string'])
         psd.replace_text(artist_layer, "Artist", self.layout.artist)
 
         # Make text white for Lands and Black cards
@@ -539,37 +728,25 @@ class AncientTemplate (temp.NormalClassicTemplate):
     template_suffix = "Ancient"
 
     def __init__(self, layout):
-
-        self.smart_tombstone = ancient_cfg["smart_tombstone"]
-        self.thicker_collector_info = ancient_cfg["thicker_collector_info"]
-        self.use_ccghq_set_symbols = ancient_cfg["use_ccghq_set_symbols"]
-        self.force_use_ccghq_set_symbols_even_when_aesthetically_inferior = ancient_cfg["force_use_ccghq_set_symbols_even_when_aesthetically_inferior"]
-        self.use_common_symbol_for_pre_exodus_sets = ancient_cfg["use_common_symbol_for_pre_exodus_sets"]
-        self.use_timeshifted_symbol_for_non_ancient_sets = ancient_cfg["use_timeshifted_symbol_for_non_ancient_sets"]
-        self.use_1993_frame_for_applicable_sets = ancient_cfg["use_1993_frame_for_applicable_sets"]
-
-        self.sets_to_use_ccghq_svgs_for = ["PTK", "ALL", "ARN", "LEG", "FEM", "ICE", "POR", "WTH", "TMP", "STH", "PCY", "TOR", "MMQ", "JUD", "INV", "SCG", "UDS", "ODY", "ONS", "EXO", "ULG", "USG", "PLS", "APC", "LGN", "S99", "PTK", "NEM"] + post_ancient_sets  # TODO: Make this a config option
-        self.sets_with_timeshifted_rarity = post_ancient_sets if self.use_timeshifted_symbol_for_non_ancient_sets else None
-        self.sets_without_rarity = pre_exodus_sets + ["POR", "P02"] if self.use_common_symbol_for_pre_exodus_sets else None
-
+        self.config_json = config_json
         import_custom_symbols_json(layout)
-
+        cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
 
-        # For Portal sets, use bold rules text and flavor divider:
-        if layout.set.upper() in ["POR", "P02", "PTK", "S99"]:
-            con.font_rules_text = "MPlantin-Bold"
-        else: cfg.flavor_divider = False
+        # # For Portal sets, use bold rules text and flavor divider:
+        # if layout.set.upper() in portal_frame_sets:
+        #     con.font_rules_text = "MPlantin-Bold"
+        # else: cfg.flavor_divider = False
         # Right-justify citations in flavor text for all sets starting with Mirage
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
 
         self.frame_style = "CardConRemastered-97"
-        if self.use_1993_frame_for_applicable_sets and layout.set.upper() in pre_mirage_sets:
+        if decision_to_use_1993_frame(self):
             if self.is_land or self.layout.background == "Gold":
-                self.frame_style = "Mock-93"
+                self.frame_style = "Mock-93"  # Because ancient.psd doesn't yet have an asset for the 1993 multicolor frame or 1993 land frame
             else:
-                self.frame_style = "Real-93" # TODO: Make this a user config option
+                self.frame_style = "Real-93"
 
     def basic_text_layers(self, text_and_icons):
 
@@ -637,7 +814,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             tm_layer.textItem.color = psd.rgb_black()
             c_layer.textItem.color = psd.rgb_black()
 
-        if self.thicker_collector_info: psd.apply_stroke(collector_layer, 1, psd.get_text_layer_color(collector_layer))
+        if self.config_json['Global']['thicker_collector_info']: psd.apply_stroke(collector_layer, 1, psd.get_text_layer_color(collector_layer))
 
         if self.layout.set.upper() in pre_legends_sets and self.layout.background == "B":
             # Turn collector info grey and clear layer style  # TODO: Test this
@@ -649,11 +826,16 @@ class AncientTemplate (temp.NormalClassicTemplate):
             psd.clear_layer_style(collector_layer)  # To get rid of inner glow
             psd.clear_layer_style(tm_layer)  # To get rid of inner glow
             psd.clear_layer_style(c_layer)  # To get rid of inner glow
-            if self.thicker_collector_info: psd.apply_stroke(collector_layer)
+            if self.config_json['Global']['thicker_collector_info']: psd.apply_stroke(collector_layer)
 
         # Fill in detailed collector info if available ("SET • 999/999 C" --> "ABC • 043/150 R")
         # collector_layer.visible = True  # Probably not needed? Hence commented out.
-        apply_custom_collector(self, collector_layer)
+        apply_custom_collector(self, collector_layer, userstring=self.config_json['Ancient']['custom_collector_string'])
+
+        # Remove "BS & Copyleft" layer if user has disabled mock copyright in config.json
+        if not self.config_json['Global']['enable_mock_copyright']:
+            tm_layer.visible = False
+            c_layer.visible = False
 
         # For old cards (pre-Mirage), left-justify the artist and collector info (and remove trademark symbol)
         if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
@@ -698,33 +880,14 @@ class AncientTemplate (temp.NormalClassicTemplate):
             if self.frame_style == "Real-93":
                 psd.getLayer("Real-93", backgd).visible = True
 
+        # Tombstone icon in upper left corner
+        self.tombstone = None
         if "tombstone" in self.layout.frame_effects:
+            self.tombstone = True
+        elif self.config_json['Global']['smart_tombstone'] and tombstone_decision_matrix(self):
+            self.tombstone = True
+        if self.tombstone:
             psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
-        if self.smart_tombstone:
-            if (
-                ("Aftermath" in self.layout.keywords) or  # TODO: Test this once split cards is implemented
-                ("Disturb" in self.layout.keywords) or  # TODO: Test this once sun-moon MDFCs are implemented
-                ("Dredge" in self.layout.keywords) or
-                ("Embalm" in self.layout.keywords) or
-                ("Encore" in self.layout.keywords) or
-                ("Escape" in self.layout.keywords) or
-                ("Eternalize" in self.layout.keywords) or
-                ("Flashback" in self.layout.keywords) or  # Example: True for "Faithless looting", but not for "Snapcaster Mage"
-                ("Jump-start" in self.layout.keywords) or
-                ("Recover" in self.layout.keywords) or
-                ("Retrace" in self.layout.keywords) or
-                ("Scavenge" in self.layout.keywords) or
-                ("Unearth" in self.layout.keywords) or
-                (f"{self.layout.card_name_raw} is in your graveyard" in self.layout.oracle_text_raw) or
-                (f"return {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
-                (f"exile {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
-                (f"cast {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
-                (f"put {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
-                (f"combine {self.layout.card_name_raw} from your graveyard" in self.layout.oracle_text_raw) or
-                (self.layout.card_name_raw in ["Nether Spirit", "Skyblade's Boon"])
-                ):
-                psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
-                # TODO: Test all of these tombstone conditions.
 
         if not self.is_land:
             layer_set = psd.getLayerSet(con.layers['NONLAND'])
@@ -848,7 +1011,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 pt.translate(0, -30)
 
             # Shift the cardname slightly left
-            if not self.smart_tombstone:
+            if not self.tombstone:
                 psd.getLayer("Card Name", "Text and Icons").translate(-100,0)
 
             # Color the white text grey for old cards
