@@ -56,7 +56,11 @@ Additionally, it adds the orange gradient in the rules text box — a visual ele
 
 ## Instructions
 
-1. Make sure you are using the right version of Proxyshop. The FelixVita-Proxyshop-Plugins are compatible with [Proxyshop v1.1.8](https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.8)
+### Prerequisites
+
+Before you begin, make sure you are using the right version of Proxyshop. The FelixVita-Proxyshop-Plugins are compatible with [Proxyshop v1.1.8](https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.8)
+
+### Installing the FelixVita plugin package
 
 1. Go to the latest release of the plugin [here](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/releases/latest) and download it by clicking `Source code (zip)` (under "Assets").
 
