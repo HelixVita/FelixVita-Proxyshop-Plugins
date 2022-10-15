@@ -123,7 +123,7 @@ Here is a table summarizing what each config option does.
 
 
 #### The `custom_collector_string` option
-Applies collector's info to the set layer, in a user-defined format, using a mix of variables and free text. The variables are
+The `custom_collector_string` option applies collector's info to the set layer, in a user-defined format, using a mix of variables and free text. The variables are
 ```
 <PrintYear>
 <Set>
