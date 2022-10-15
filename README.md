@@ -100,3 +100,51 @@ You have the option to toggle certain behaviors on and off by modifying the `con
 
 ![image](https://user-images.githubusercontent.com/102387379/195993272-00d341c7-61c4-4a1e-a59a-a43be9f66905.png)
 
+Simply open the file in Notepad and change the value of the config option you wish to modify.
+
+Aside from the the option `custom_collector_string` (which is explained in more detail below), each config option has exactly three possible values: `true`, `false`, or `"auto"`
+
+### Explanation of what each configuration option means
+
+Here is a table summarizing what each config option does. 
+
+| config option                      | description                                                                                | default | auto behavior    | known issues                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ | ------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| smart_tombstone                    | enable tombstone symbol next to cardname for cards with graveyard abilities                | true    | auto = true      | none                                                                                                |
+| flavor_divider                     | enable flavor text separator bar for cards that have both rules text and flavor text       | auto    | auto = true      | [portal-style divider spacing issue](https://github.com/MrTeferi/MTG-Proxyshop/issues/25)           |
+| use_legendary_crown                | enable the legendary crown frame effect on legendary cards                                 | auto    | n/a              | [not yet implemented](https://github.com/MrTeferi/MTG-Proxyshop/issues/18)                          |
+| use_set_symbol                     | set this to 'false' to completely disable the set symbol                                   | auto    | authenticity*    | none                                                                                                |
+| use_ccghq_set_symbols              | attempt to use ccghq set symbol SVGs instead of the default proxyshop-generated set symbol | auto    | authenticity*    | none                                                                                                |
+| use_ccghq_set_symbol_rarity_color  | enable set symbol rarity color (silver=uncommon, gold=rare, orange=mythic rare)            | auto    | authenticity*    | none                                                                                                |
+| use_ccghq_timeshifted_rarity_color | enable the timeshifted (purple) rarity set symbol color                                    | auto    | authenticity*    | none                                                                                                |
+| thicker_collector_info             | slightly increase thickness of the collector's info / copyright line (for readability)     | false   | auto = false     | incompatible w/ "enable_mock_copyright"                                                             |
+| enable_mock_copyright              | adds a "BS & Copyleft" text, for a slightly more authentic look at a glance                | true    | auto = true      | none                                                                                                |
+| use_1993_frame                     | use the 1993 version of the classic frame instead of the default 1997 version              | auto    | if card's set is | [inter-1993 nuances are missing](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/8) |
+
+
+#### The `custom_collector_string` option
+Applies collector's info to the set layer, in a user-defined format, using a mix of variables and free text. The variables are
+```
+<PrintYear>
+<Set>
+<CollectorNumber>
+<CardCount>
+<Rarity>
+```
+For example, if you're rendering `Skullclamp [DST]` and you've modified `custom_collector_string` to say
+```
+<PrintYear> Joe Proxy * Not for Sanctioned Play * <Set> <CollectorNumber>/<CardCount> <Rarity>
+```
+Then this will produce something like:
+
+> 2004 Joe Proxy • Not for Sanctioned Play • DST 140/165 U
+
+and if any collector info is missing, it will simply be omitted.
+
+#### If auto-behavior is "authenticity"
+
+To say that the auto-behavior is "authenticity" is short-hand for: Makes Proxyshop behave in such a way as to render the card in a way that it resembles the real printing of the card as faithfully and authentically as possible. Specifically,
+- If `use_set_symbol` is set to `auto`, then all cards from non-expansion early core sets (like Alpha, Beta, 4th Edition) will not be rendered with a set symbol
+- If `use_ccghq_set_symbols`  is set to `auto`, then CCGHQ SVGs will not be used as set symbols for certain sets where I've made the subjective decision that the CCGHQ ones look inferior to the Proxyshop-generated ones
+- If `use_ccghq_set_symbol_rarity_color`  is set to `auto`, then cards from any pre-Exodus sets will be rendered with the "common" rarity color
+- If `use_ccghq_timeshifted_rarity_color`  is set to `auto`, then all post-Scourge cards rendered with the _Ancient_ template will have the timeshifted (purple) rarity set symbol color (to indicate that they have been "timeshifted" from a Modern/M15 frame to the classic frame)
