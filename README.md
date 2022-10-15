@@ -81,7 +81,7 @@ Before you begin, make sure you are using the right version of Proxyshop. The Fe
 
     ![image](https://user-images.githubusercontent.com/102387379/191598378-3e36f318-6345-49e6-9be0-d210b594c387.png)
 
-1. Run Proxyshop. You should now see "Ancient", "Modern", and "Normal Plus" in the list of available templates. Enjoy!
+1. Run Proxyshop. You should now see "Ancient", "Modern", and "Normal Plus" (and its class variants) in the list of available templates. Enjoy!
 
     ![image](https://user-images.githubusercontent.com/102387379/191357752-ebe486c1-59d9-480f-bb55-639ba64a7753.png)
 
