@@ -51,7 +51,6 @@ The _Miracle Plus_ plugin does the exact same thing for the existing _Miracle_ t
 #### Normal Plus Class: Invention
 
 The _Invention Bronze Plus_ plugin does the exact same thing for the existing _Invention Bronze_ template as _Normal Plus_ does for the _Normal_ template.
-
 Additionally, it adds the orange gradient in the rules text box — a visual element which (as of 2022-Oct-14) is still missing from the current masterpiece.psd template.
 
 ## Instructions
