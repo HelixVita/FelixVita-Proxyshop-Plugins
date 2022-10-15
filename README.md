@@ -24,7 +24,7 @@ Although developing _Ancient_ has been my primary focus, I have additionally mad
 
 ### Modern
 
-The _Modern_ template / plugin lets you create cards with the modern with the [modern frame](https://scryfall.com/search?q=frame%3Amodern+-is%3Adigital).
+The _Modern_ template / plugin lets you create cards with the [modern frame](https://scryfall.com/search?q=frame%3Amodern+-is%3Adigital).
 It is basically the same as `normal.psd` except for the following modifications:
 
 - Bottom part of the card frame is added back in
