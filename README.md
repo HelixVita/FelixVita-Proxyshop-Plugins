@@ -93,3 +93,10 @@ When enabled, Proxyshop will attempt to use CCGHQ set symbol SVGs instead of gen
 - An error was encountered when attempting to load the CCGHQ SVG
 
 Please also note that I have not yet checked every set symbol to ensure that it looks authentic. (I have thus far only done that for the sets from Alpha to Scourge, i.e. the old-school/classic frame cards relevant to the _Ancient_ template).
+
+## Optional user configuration
+
+You have the option to toggle certain behaviors on and off by modifying the `config.json` file, located here:
+
+![image](https://user-images.githubusercontent.com/102387379/195993272-00d341c7-61c4-4a1e-a59a-a43be9f66905.png)
+
