@@ -1,8 +1,10 @@
 {
   "Global": {
+    "use_previously_memorized_art_positions": "auto",
+    "memorize_new_art_positions": false,
     "smart_tombstone": true,
     "flavor_divider": "auto",
-    "use_legendary_crown_on_legendary_cards": "auto",
+    "use_legendary_crown": false,
     "use_set_symbol": "auto",
     "use_ccghq_set_symbols": "auto",
     "use_ccghq_set_symbol_rarity_color": "auto",
@@ -18,6 +20,7 @@
     "custom_collector_string": "<PrintYear> Proxy * Not for Sale * <Set> <CollectorNumber>/<CardCount> <Rarity>"
   },
   "Normal": {
-    "custom_collector_string": "<PrintYear> Proxy * Not for Sale"
+    "custom_collector_string": "<PrintYear> Proxy * Not for Sale",
+    "use_premium_star_between_set_and_lang": false
   }
 }

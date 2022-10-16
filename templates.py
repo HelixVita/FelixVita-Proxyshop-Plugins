@@ -13,6 +13,8 @@ from pathlib import Path
 from proxyshop.text_layers import ExpansionSymbolField, TextField  # For type hinting
 import felix_helpers as flx
 import json
+import os
+import csv
 
 """
 HELPER CONSTANTS
@@ -143,8 +145,32 @@ if config_json['Global']['enable_mock_copyright'] == "auto":
     config_json['Global']['enable_mock_copyright'] = True
 if config_json['Global']['smart_tombstone'] == "auto":
     config_json['Global']['smart_tombstone'] = True
-if config_json['Global']['use_legendary_crown_on_legendary_cards'] == "auto" or False:
+if config_json['Global']['use_legendary_crown'] == "auto" or False:
    console.update("WARNING: Disabling of legendary crown is not yet implemented. Consider voting for this issue at https://github.com/MrTeferi/MTG-Proxyshop/issues/18")
+
+def decision_to_memorize_new_art_positions(self):
+    user_input = config_json['Global']['memorize_new_art_positions']
+    if isinstance(user_input, bool):
+        return user_input
+    if  user_input == "auto":
+        return not self.current_art_pos_entry_exists
+
+def decision_to_use_previously_memorized_art_positions(self):
+    user_input = self.config_json['Global']['use_previously_memorized_art_positions']
+    if decision_to_memorize_new_art_positions(self):
+        return True
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        return True
+
+def decision_to_use_premium_star_between_set_and_lang(self):
+    user_input = self.config_json['Normal']['use_premium_star_between_set_and_lang']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        # If no nonfoil printing of the card exists in this set, then use the "premium" star instead of the regular dot:
+        return not self.layout.scryfall['nonfoil']
 
 def decision_to_use_flavor_divider(self, layout):
     user_input = self.config_json['Global']['flavor_divider']
@@ -163,7 +189,7 @@ def decision_to_use_flavor_divider(self, layout):
             return True
 
 def decision_to_have_legendary_crown(self):
-    user_input = self.config_json['Global']['use_legendary_crown_on_legendary_cards']
+    user_input = self.config_json['Global']['use_legendary_crown']
     if isinstance(user_input, bool):
         return user_input
     if user_input == "auto":
@@ -209,6 +235,7 @@ def decision_to_use_1993_frame(self):
         return user_input
     if user_input == "auto":
         return self.layout.set.upper() in pre_mirage_sets
+
 
 
 """
@@ -471,6 +498,88 @@ def tombstone_decision_matrix(self) -> bool:
         )
     return decision
 
+def art_position_memory(self):
+
+    if decision_to_use_previously_memorized_art_positions(self):
+        csv_folder = "memorized-art-positions"
+        csv_name = os.path.splitext(self.template_file_name)[0] + ".csv"
+        csv_expected_path = os.path.join(os.path.dirname(self.layout.file), csv_folder, csv_name)
+        csv_exists = os.path.exists(csv_expected_path)
+        if not csv_exists:
+            # Create the folders and CSV file if it doesn't exist.
+            os.makedirs(os.path.dirname(csv_expected_path), exist_ok=True)
+            with open(csv_expected_path, 'w') as f:
+                pass
+
+        # Grab all csv data and save to var
+        self.art_pos_data = []
+        self.current_art_pos_idx = None
+        with open(csv_expected_path, mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            for row in csv_reader:
+                self.art_pos_data.append(row)
+
+        # Get data for this specific card
+        self.current_art_pos_entry_exists = None
+        current_art_pos = None
+        delete_duplicate_entries = []
+        for row_num,row_content in enumerate(self.art_pos_data):
+                if row_content['filename'] == os.path.basename(self.layout.file):
+                    if not current_art_pos:
+                        self.current_art_pos_entry_exists = True
+                        self.current_art_pos_idx = row_num
+                        current_art_pos = tuple([float(_) for _ in [row_content['x'], row_content['y'], row_content['w'], row_content['h']]])
+                    else:
+                        console.update("Found duplicate entry in art position memory CSV!")
+                        delete_duplicate_entries.append(row_num)
+        if delete_duplicate_entries:
+            console.update("Deleting duplicate entries...")
+            for idx in sorted(delete_duplicate_entries, reverse=True):
+                del self.art_pos_data[idx]
+
+        if self.current_art_pos_entry_exists:
+            console.update("Aligning & resizing art using memorized values from CSV (no stretching)...")
+            x,y,w,h = current_art_pos
+            layer = self.art_layer
+            anchor = ps.AnchorPosition.TopLeft
+            layer_dim = psd.get_layer_dimensions(layer)
+            ref_dim = dict(zip(('width', 'height'), (w, h)))
+            if layer_dim != ref_dim:
+                scale = 100 * max((ref_dim['width'] / layer_dim['width']), (ref_dim['height'] / layer_dim['height']))
+                layer.resize(scale, scale, anchor)
+            # Align the layer
+            layer.translate(x-layer.bounds[0], y-layer.bounds[1])
+
+        if decision_to_memorize_new_art_positions(self) and not cfg.dev_mode:
+            # Set art layer to be the active layer, because this this will now make it super quick to detect if an image does not fully fill the frame (if you have "Show Transform Controls" enabled)
+            app.activeDocument.activeLayer = self.art_layer
+            console.wait("New memorization of art positions is enabled. Please make your adjustments, then click continue...")
+            console.update(f"Saving art position to memorized-art-positions/{Path(csv_expected_path).name} in same folder as your art...")
+            # Update posData values based on current art position (after Proxyshop's "manual edit step")
+            new_x, new_y = self.art_layer.bounds[:2]
+            new_w,new_h = tuple([psd.get_layer_dimensions(self.art_layer).get(key) for key in ['width', 'height']])
+            updatedArtPos = {'filename': os.path.basename(self.layout.file), 'x': new_x, 'y': new_y, 'w': new_w, 'h': new_h}
+            # Update the art_post_data var at the correct index
+            if self.current_art_pos_entry_exists:
+                self.art_pos_data[self.current_art_pos_idx] = updatedArtPos
+            else:
+                self.art_pos_data.append(updatedArtPos)
+            # Update the csv file
+            with open(csv_expected_path, 'w', newline='') as csvfile:
+                fieldnames = ['filename', 'x', 'y', 'w', 'h']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in self.art_pos_data:
+                    writer.writerow(row)
+
+def use_premium_star_in_coll_info_where_appropriate(self):
+    if decision_to_use_premium_star_between_set_and_lang(self):
+        collector_bottom = psd.getLayer("Bottom", ("Legal", "Collector"))
+        # psd.replace_text(collector_bottom, "•", "★")
+        console.update("Changing of dot to star is not yet implemented (WIP).")
+
+
+
 """
 HELPERS FOR SET-SPECIFIC SYMBOL ADJUSTMENTS
 """
@@ -610,8 +719,6 @@ class NormalPlusTemplate(temp.NormalTemplate):
         import_custom_symbols_json(layout)
         cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
-        # if not decision_to_use_flavor_divider(self, layout):
-        #     psd.getLayer(con.layers['DIVIDER'], "Text and Icons").remove()
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
@@ -620,6 +727,8 @@ class NormalPlusTemplate(temp.NormalTemplate):
     def post_text_layers(self):
         normalplus_collector_fix(self)
         normalplus_bottom_right_text(self)
+        art_position_memory(self)
+        use_premium_star_in_coll_info_where_appropriate(self)
 
 class MiraclePlusTemplate(temp.MiracleTemplate):
     """
@@ -640,6 +749,8 @@ class MiraclePlusTemplate(temp.MiracleTemplate):
     def post_text_layers(self):
         normalplus_collector_fix(self)
         normalplus_bottom_right_text(self)
+        art_position_memory(self)
+        use_premium_star_in_coll_info_where_appropriate(self)
 
 class InventionPlusTemplate(temp.InventionTemplate):
     """
@@ -655,7 +766,6 @@ class InventionPlusTemplate(temp.InventionTemplate):
         super().__init__(layout)
         inventionplus_rules_box_gradient_fix()
 
-
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
         felix_set_symbol_logic(self)
@@ -663,6 +773,8 @@ class InventionPlusTemplate(temp.InventionTemplate):
     def post_text_layers(self):
         normalplus_collector_fix(self)
         normalplus_bottom_right_text(self)
+        art_position_memory(self)
+        use_premium_star_in_coll_info_where_appropriate(self)
 
 """
 MODERN TEMPLATE
@@ -671,7 +783,6 @@ MODERN TEMPLATE
 # THS: Stroke should be white, not black.
 # BNG: Stroke should be white, not black.
 # Add tombstone icon (some modern cards do actually have it)
-
 
 class ModernTemplate (temp.NormalTemplate):
     """
@@ -712,6 +823,8 @@ class ModernTemplate (temp.NormalTemplate):
         super().basic_text_layers(text_and_icons)
         felix_set_symbol_logic(self)
 
+    def post_text_layers(self):
+        art_position_memory(self)
 
 class AncientTemplate (temp.NormalClassicTemplate):
     """
@@ -993,6 +1106,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def post_text_layers(self):
         super().post_text_layers()
+
+        art_position_memory(self)
 
         if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
             if self.layout.power is not None or self.layout.toughness is not None:
