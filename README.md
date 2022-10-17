@@ -106,46 +106,53 @@ Aside from the the option `custom_collector_string` (which is explained in more 
 
 ### Explanation of what each configuration option means
 
-Here is a table summarizing what each config option does. 
+Here is a table summarizing what each config option does.
 
-| config option                      | description                                                                                | default | auto behavior | known issues                                                                                                                                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------------ | ------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| smart_tombstone                    | enable tombstone symbol next to cardname for cards with graveyard abilities                | true    | auto = true   | none                                                                                                                                                                                                  |
-| flavor_divider                     | enable flavor text separator bar for cards that have both rules text and flavor text       | auto    | auto = true   | [portal-style divider spacing issue](https://github.com/MrTeferi/MTG-Proxyshop/issues/25)                                                                                                             |
-| use_legendary_crown                | enable the legendary crown frame effect on legendary cards                                 | auto    | n/a           | [not yet implemented](https://github.com/MrTeferi/MTG-Proxyshop/issues/18)                                                                                                                            |
-| use_set_symbol                     | set this to 'false' to completely disable the set symbol                                   | auto    | authenticity* | none                                                                                                                                                                                                  |
-| use_ccghq_set_symbols              | attempt to use ccghq set symbol SVGs instead of the default proxyshop-generated set symbol | auto    | authenticity* | none                                                                                                                                                                                                  |
-| use_ccghq_set_symbol_rarity_color  | enable set symbol rarity color (silver=uncommon, gold=rare, orange=mythic rare)            | auto    | authenticity* | none                                                                                                                                                                                                  |
-| use_ccghq_timeshifted_rarity_color | enable the timeshifted (purple) rarity set symbol color                                    | auto    | authenticity* | none                                                                                                                                                                                                  |
-| thicker_collector_info             | slightly increase thickness of the collector's info / copyright line (for readability)     | false   | auto = false  | incompatible w/ "enable_mock_copyright"                                                                                                                                                               |
-| enable_mock_copyright              | adds a "BS & Copyleft" text, for a slightly more authentic look at a glance                | true    | auto = true   | none                                                                                                                                                                                                  |
-| use_1993_frame                     | use the 1993 version of the classic frame instead of the default 1997 version              | auto    | authenticity* | [inter-1993 nuances are missing](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/8), [missing land and gold frame](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/9) | 
+| config option                          | description                                                                                                                                                                                 | default | auto behavior                                             | known issues                                                                                                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| memorize_new_art_positions             | pauses proxyshop before saving to let you adjust the art position; this position will be stored in a csv file for automatic re-use in any subsequent proxyshop runs using the same art file | true    | true if below option is true and no position is saved yet |                                                                                                                                                                                                       |
+| use_previously_memorized_art_positions | automatically re-position the art using the values stored in a csv file by using the option above (It'll work as long as the art filename doesn't change)                                   | auto    | auto = true                                               |                                                                                                                                                                                                       |
+| smart_tombstone                        | enable tombstone symbol next to cardname for cards with graveyard abilities                                                                                                                 | true    | auto = true                                               | none                                                                                                                                                                                                  |
+| flavor_divider                         | enable flavor text separator bar for cards that have both rules text and flavor text                                                                                                        | auto    | authenticity*                                             | [portal-style divider spacing issue](https://github.com/MrTeferi/MTG-Proxyshop/issues/25)                                                                                                             |
+| use_legendary_crown                    | enable the legendary crown frame effect on legendary cards                                                                                                                                  | auto    | n/a                                                       | [not yet implemented](https://github.com/MrTeferi/MTG-Proxyshop/issues/18)                                                                                                                            |
+| use_set_symbol                         | set this to 'false' to completely disable the set symbol                                                                                                                                    | auto    | authenticity*                                             | none                                                                                                                                                                                                  |
+| use_ccghq_set_symbols                  | attempt to use ccghq set symbol SVGs instead of the default proxyshop-generated set symbol                                                                                                  | auto    | authenticity*                                             | none                                                                                                                                                                                                  |
+| use_ccghq_set_symbol_rarity_color      | enable set symbol rarity color (silver=uncommon, gold=rare, orange=mythic rare)                                                                                                             | auto    | authenticity*                                             | none                                                                                                                                                                                                  |
+| use_ccghq_timeshifted_rarity_color     | enable the timeshifted (purple) rarity set symbol color                                                                                                                                     | auto    | authenticity*                                             | none                                                                                                                                                                                                  |
+| thicker_collector_info                 | slightly increase thickness of the collector's info / copyright line (for readability)                                                                                                      | false   | auto = false                                              | incompatible w/ "enable_mock_copyright"                                                                                                                                                               |
+| enable_mock_copyright                  | adds a "BS & Copyleft" text, for a slightly more authentic look at a glance                                                                                                                 | true    | auto = true                                               | none                                                                                                                                                                                                  |
+| use_1993_frame                         | use the 1993 version of the classic frame instead of the default 1997 version                                                                                                               | auto    | authenticity*                                             | [inter-1993 nuances are missing](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/8), [missing land and gold frame](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/9) |
 
+#### If auto-behavior is "authenticity"
+
+To say that the auto-behavior is "authenticity" is short-hand for: Makes Proxyshop behave in such a way as to render the card in a way that it resembles the real printing of the card as faithfully and authentically as possible. Specifically,
+- If `flavor_divider` is set to `auto`, then a flavor-divider will be used only on cards printed in dominaria or later and only if they are rendered with normal.psd (except for portal set cards, which also get flavor-dividers if rendered with ancient.psd)
+- If `use_set_symbol` is set to `auto`, then all cards from non-expansion early core sets (like Alpha, Beta, 4th Edition) will not be rendered with a set symbol
+- If `use_ccghq_set_symbols`  is set to `auto`, then CCGHQ SVGs will not be used as set symbols for certain sets where I've made the subjective decision that the CCGHQ ones look inferior to the Proxyshop-generated ones
+- If `use_ccghq_set_symbol_rarity_color`  is set to `auto`, then cards from any pre-Exodus sets will be rendered with the "common" rarity color
+- If `use_ccghq_timeshifted_rarity_color`  is set to `auto`, then all post-Scourge cards rendered with the _Ancient_ template will have the timeshifted (purple) rarity set symbol color (to indicate that they have been "timeshifted" from a Modern/M15 frame to the classic frame)
+- If `use_1993_frame`  is set to `auto`, then cards from any pre-Mirage sets will be rendered with the 1993 frame asset
 
 #### The `custom_collector_string` option
+
 The `custom_collector_string` option applies collector's info to the set layer, in a user-defined format, using a mix of variables and free text. The variables are
-```
+
+```text
 <PrintYear>
 <Set>
 <CollectorNumber>
 <CardCount>
 <Rarity>
 ```
+
 For example, if you're rendering `Skullclamp [DST]` and you've modified `custom_collector_string` to say
-```
+
+```text
 <PrintYear> Joe Proxy * Not for Sanctioned Play * <Set> <CollectorNumber>/<CardCount> <Rarity>
 ```
+
 Then this will produce something like:
 
 > 2004 Joe Proxy • Not for Sanctioned Play • DST 140/165 U
 
 and if any collector info is missing, it will simply be omitted.
-
-#### If auto-behavior is "authenticity"
-
-To say that the auto-behavior is "authenticity" is short-hand for: Makes Proxyshop behave in such a way as to render the card in a way that it resembles the real printing of the card as faithfully and authentically as possible. Specifically,
-- If `use_set_symbol` is set to `auto`, then all cards from non-expansion early core sets (like Alpha, Beta, 4th Edition) will not be rendered with a set symbol
-- If `use_ccghq_set_symbols`  is set to `auto`, then CCGHQ SVGs will not be used as set symbols for certain sets where I've made the subjective decision that the CCGHQ ones look inferior to the Proxyshop-generated ones
-- If `use_ccghq_set_symbol_rarity_color`  is set to `auto`, then cards from any pre-Exodus sets will be rendered with the "common" rarity color
-- If `use_ccghq_timeshifted_rarity_color`  is set to `auto`, then all post-Scourge cards rendered with the _Ancient_ template will have the timeshifted (purple) rarity set symbol color (to indicate that they have been "timeshifted" from a Modern/M15 frame to the classic frame)
-- If `use_1993_frame`  is set to `auto`, then cards from any pre-Mirage sets will be rendered with the 1993 frame asset
