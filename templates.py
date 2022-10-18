@@ -148,21 +148,19 @@ if config_json['Global']['smart_tombstone'] == "auto":
 if config_json['Global']['use_legendary_crown'] == "auto" or False:
    console.update("WARNING: Disabling of legendary crown is not yet implemented. Consider voting for this issue at https://github.com/MrTeferi/MTG-Proxyshop/issues/18")
 
-def decision_to_memorize_new_art_positions(self):
-    user_input = config_json['Global']['memorize_new_art_positions']
-    if isinstance(user_input, bool):
-        return user_input
-    if  user_input == "auto":
-        return not self.current_art_pos_entry_exists
-
-def decision_to_use_previously_memorized_art_positions(self):
-    user_input = self.config_json['Global']['use_previously_memorized_art_positions']
-    if decision_to_memorize_new_art_positions(self):
-        return True
+def decision_to_enable_art_position_memory(self):
+    user_input = self.config_json['Global']['art_position_memory_enabled']
     if isinstance(user_input, bool):
         return user_input
     if user_input == "auto":
         return True
+
+def decision_to_memorize_new_art_position(self):
+    user_input = config_json['Global']['art_position_memorize_new']
+    if isinstance(user_input, bool):
+        return user_input
+    if  user_input == "auto":
+        return not self.current_art_pos_entry_exists
 
 def decision_to_use_premium_star_between_set_and_lang(self):
     user_input = self.config_json['Normal']['use_premium_star_between_set_and_lang']
@@ -499,85 +497,112 @@ def tombstone_decision_matrix(self) -> bool:
     return decision
 
 def art_position_memory(self):
-
-    if decision_to_use_previously_memorized_art_positions(self):
-        csv_folder = "memorized-art-positions"
-        csv_name = os.path.splitext(self.template_file_name)[0] + ".csv"
-        csv_expected_path = os.path.join(os.path.dirname(self.layout.file), csv_folder, csv_name)
-        csv_exists = os.path.exists(csv_expected_path)
-        if not csv_exists:
-            # Create the folders and CSV file if it doesn't exist.
-            os.makedirs(os.path.dirname(csv_expected_path), exist_ok=True)
-            with open(csv_expected_path, 'w') as f:
-                pass
-
-        # Grab all csv data and save to var
-        self.art_pos_data = []
-        self.current_art_pos_idx = None
-        with open(csv_expected_path, mode='r') as csv_file:
-            csv_reader = csv.DictReader(csv_file)
-            for row in csv_reader:
-                self.art_pos_data.append(row)
-
-        # Get data for this specific card
-        self.current_art_pos_entry_exists = None
-        current_art_pos = None
-        delete_duplicate_entries = []
-        for row_num,row_content in enumerate(self.art_pos_data):
-                if row_content['filename'] == os.path.basename(self.layout.file):
-                    if not current_art_pos:
-                        self.current_art_pos_entry_exists = True
-                        self.current_art_pos_idx = row_num
-                        current_art_pos = tuple([float(_) for _ in [row_content['x'], row_content['y'], row_content['w'], row_content['h']]])
-                    else:
-                        console.update("Found duplicate entry in art position memory CSV!")
-                        delete_duplicate_entries.append(row_num)
-        if delete_duplicate_entries:
-            console.update("Deleting duplicate entries...")
-            for idx in sorted(delete_duplicate_entries, reverse=True):
-                del self.art_pos_data[idx]
-
-        if self.current_art_pos_entry_exists:
-            console.update("Aligning & resizing art using memorized values from CSV (no stretching)...")
-            x,y,w,h = current_art_pos
-            layer = self.art_layer
-            anchor = ps.AnchorPosition.TopLeft
-            layer_dim = psd.get_layer_dimensions(layer)
-            ref_dim = dict(zip(('width', 'height'), (w, h)))
-            if layer_dim != ref_dim:
-                scale = 100 * max((ref_dim['width'] / layer_dim['width']), (ref_dim['height'] / layer_dim['height']))
-                layer.resize(scale, scale, anchor)
-            # Align the layer
-            layer.translate(x-layer.bounds[0], y-layer.bounds[1])
-
-        if decision_to_memorize_new_art_positions(self) and not cfg.dev_mode:
-            # Set art layer to be the active layer, because this this will now make it super quick to detect if an image does not fully fill the frame (if you have "Show Transform Controls" enabled)
-            app.activeDocument.activeLayer = self.art_layer
-            console.wait("New memorization of art positions is enabled. Please make your adjustments, then click continue...")
-            console.update(f"Saving art position to memorized-art-positions/{Path(csv_expected_path).name} in same folder as your art...")
-            # Update posData values based on current art position (after Proxyshop's "manual edit step")
-            new_x, new_y = self.art_layer.bounds[:2]
-            new_w,new_h = tuple([psd.get_layer_dimensions(self.art_layer).get(key) for key in ['width', 'height']])
-            updatedArtPos = {'filename': os.path.basename(self.layout.file), 'x': new_x, 'y': new_y, 'w': new_w, 'h': new_h}
-            # Update the art_post_data var at the correct index
-            if self.current_art_pos_entry_exists:
-                self.art_pos_data[self.current_art_pos_idx] = updatedArtPos
+    # Find the CSV file or create it (plus folders) if it doesn't exist.
+    csv_folder = "memorized-art-positions"
+    csv_name = os.path.splitext(self.template_file_name.split('/')[-1])[0] + ".csv"
+    csv_expected_path = os.path.join(os.path.dirname(self.layout.file), csv_folder, csv_name)
+    csv_exists = os.path.exists(csv_expected_path)
+    if not csv_exists:
+        os.makedirs(os.path.dirname(csv_expected_path), exist_ok=True)
+        with open(csv_expected_path, 'w') as f:
+            pass
+    # Grab all csv data and save to var
+    self.art_pos_data = []
+    self.current_art_pos_idx = None
+    with open(csv_expected_path, mode='r') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            self.art_pos_data.append(row)
+    # Iterate through all rows of the CSV to find the first row that matches the current card
+    self.current_art_pos_entry_exists = None
+    current_art_pos = None
+    duplicate_csv_entries = []
+    for row_num,row_content in enumerate(self.art_pos_data):
+        # If the art filename of the current row matches that of the card currently being rendered, save the row number and the art position IF this is the first occurence. Delete any subsequent matching rows as duplicates.
+        if row_content['filename'] == os.path.basename(self.layout.file):
+            if not current_art_pos:
+                current_art_pos = tuple([float(_) for _ in [row_content['x'], row_content['y'], row_content['w'], row_content['h']]])
+                self.current_art_pos_idx = row_num
+                self.current_art_pos_entry_exists = True
             else:
-                self.art_pos_data.append(updatedArtPos)
-            # Update the csv file
-            with open(csv_expected_path, 'w', newline='') as csvfile:
-                fieldnames = ['filename', 'x', 'y', 'w', 'h']
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for row in self.art_pos_data:
-                    writer.writerow(row)
+                console.update("Found duplicate entry in art position memory CSV!")
+                duplicate_csv_entries.append(row_num)
+    if duplicate_csv_entries:
+        console.update("Deleting duplicate entries...")
+        for idx in sorted(duplicate_csv_entries, reverse=True):
+            del self.art_pos_data[idx]
+    # Use the retrieved art position to align & resize the art layer. Note: This does not support 'stretching' art (as in changing its aspect ratio).
+    if self.current_art_pos_entry_exists:
+        console.update("Aligning & resizing art using memorized values from CSV (no stretching)...")
+        x,y,w,h = current_art_pos
+        layer = self.art_layer
+        anchor = ps.AnchorPosition.TopLeft
+        layer_dim = psd.get_layer_dimensions(layer)
+        ref_dim = dict(zip(('width', 'height'), (w, h)))
+        if layer_dim != ref_dim:
+            scale = 100 * max((ref_dim['width'] / layer_dim['width']), (ref_dim['height'] / layer_dim['height']))
+            layer.resize(scale, scale, anchor)
+        # Align the layer
+        layer.translate(x-layer.bounds[0], y-layer.bounds[1])
+    elif not decision_to_memorize_new_art_position(self):
+        console.update("No memorized art position found. (To memorize new positions, you must enable the option 'art_position_memorize_new' in config.json).")
+
+    if decision_to_memorize_new_art_position(self) and not cfg.dev_mode:
+        # Set art layer to be the active layer, because this this will now make it super quick to detect if an image does not fully fill the frame (if you have "Show Transform Controls" enabled)
+        app.activeDocument.activeLayer = self.art_layer
+        # Trigger a manual edit mode
+        console.wait("New memorization of art positions is enabled. Please make your adjustments, then click continue...")
+        console.update(f"Saving art position to memorized-art-positions/{Path(csv_expected_path).name} in same folder as your art...")
+        # Update posData values based on current art position
+        new_x, new_y = self.art_layer.bounds[:2]
+        new_w,new_h = tuple([psd.get_layer_dimensions(self.art_layer).get(key) for key in ['width', 'height']])
+        updatedArtPos = {'filename': os.path.basename(self.layout.file), 'x': new_x, 'y': new_y, 'w': new_w, 'h': new_h}
+        # Update the art_post_data var at the correct index
+        if self.current_art_pos_entry_exists:
+            self.art_pos_data[self.current_art_pos_idx] = updatedArtPos
+        else:
+            self.art_pos_data.append(updatedArtPos)
+        # Update the csv file
+        with open(csv_expected_path, 'w', newline='') as csvfile:
+            fieldnames = ['filename', 'x', 'y', 'w', 'h']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in self.art_pos_data:
+                writer.writerow(row)
 
 def use_premium_star_in_coll_info_where_appropriate(self):
     if decision_to_use_premium_star_between_set_and_lang(self):
         collector_bottom = psd.getLayer("Bottom", ("Legal", "Collector"))
-        # psd.replace_text(collector_bottom, "•", "★")
+        # psd.replace_text(collector_bottom, "•", "µ∂∑∏∫¬≈")
         console.update("Changing of dot to star is not yet implemented (WIP).")
 
+unsupported_chars_dict = {
+    "á": "a",  # Example: "Marton Stromgald"
+    "û": "u",  # Example: "Ring of Ma'ruf"
+    "ǵ": "g",  # Example: "Volkan Baga" (Artist)
+    }
+
+def felix_fix_unsupported_chars(text):
+    for bad_char, good_char in unsupported_chars_dict.items():
+        text = text.replace(bad_char, good_char)
+    return text
+
+def felix_fix_unsupported_chars_in_cardname(self):
+    """
+    Use this in the basic_text_layers() method, prior to calling super().basic_text_layers().
+    Seems to only be necessary with templates using the font "" (i.e. NormalClassic class).
+    """
+    for lay in self.tx_layers:
+        if lay.layer.name == "Card Name":
+            if any(bad_char in lay.contents for bad_char in unsupported_chars_dict.keys()):
+                lay.contents = felix_fix_unsupported_chars(lay.contents)
+
+def felix_fix_unsupported_chars_in_artist_name(self):
+    """
+    Use this at any point prior to the execution of the collector_info() method.
+    Seems to only be necessary with templates using the font "Magic:the Gathering" (i.e. Normal class, but not Modern)
+    """
+    self.layout.artist = felix_fix_unsupported_chars(self.layout.artist)
 
 
 """
@@ -723,7 +748,9 @@ class NormalPlusTemplate(temp.NormalTemplate):
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
+        felix_fix_unsupported_chars_in_cardname(self)
         felix_set_symbol_logic(self)
+        felix_fix_unsupported_chars_in_artist_name(self)
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
@@ -745,7 +772,9 @@ class MiraclePlusTemplate(temp.MiracleTemplate):
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
+        felix_fix_unsupported_chars_in_cardname(self)
         felix_set_symbol_logic(self)
+        felix_fix_unsupported_chars_in_artist_name(self)
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
@@ -769,7 +798,9 @@ class InventionPlusTemplate(temp.InventionTemplate):
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
+        felix_fix_unsupported_chars_in_cardname(self)
         felix_set_symbol_logic(self)
+        felix_fix_unsupported_chars_in_artist_name(self)
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
@@ -822,6 +853,7 @@ class ModernTemplate (temp.NormalTemplate):
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
+        felix_fix_unsupported_chars_in_cardname(self)
         felix_set_symbol_logic(self)
 
     def post_text_layers(self):
@@ -857,14 +889,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def basic_text_layers(self, text_and_icons):
 
-        # TODO: Add code to fix unrenderable cardnames like "Ring of Ma'ruf" and "Marton Stromgald" (might be able to reuse the commented-out code snippet from "templates_old.py" below)
-        # # Hardcoded changes to certain cardnames containing unrenderable chars:
-        # cardname = str(self.layout.name)
-        # if setcode == "ARN" and cardname.upper().startswith("RING"):
-        #     cardname = "Ring of Ma'ruf"
-        # elif setcode == "ICE" and cardname.upper().endswith("STROMGALD"):
-        #     cardname = "Marton Stromgald"
-
         if self.frame_style == "Real-93":
             # Make the rules text narrower
             rtext = psd.getLayer("Rules Text", con.layers['TEXT_AND_ICONS'])
@@ -875,6 +899,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
             tref.visible = False
 
         super().basic_text_layers(text_and_icons)
+        felix_fix_unsupported_chars_in_cardname(self)
         felix_set_symbol_logic(self)
 
         if self.layout.set.upper() in ["POR", "P02", "PTK"] and self.is_creature:
@@ -1107,9 +1132,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def post_text_layers(self):
         super().post_text_layers()
-
-        art_position_memory(self)
-
+        # Misc post-text steps for 1993 frame
         if self.frame_style == "Real-93" and self.layout.set.upper() in pre_mirage_sets:
             if self.layout.power is not None or self.layout.toughness is not None:
                 # Use non-bold MPlantin for the Power and Toughness text
@@ -1117,11 +1140,9 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 pt.textItem.font = "MPlantin"
                 pt.textItem.size = 10
                 pt.translate(0, -30)
-
             # Shift the cardname slightly left
             if not self.tombstone:
                 psd.getLayer("Card Name", "Text and Icons").translate(-100,0)
-
             # Color the white text grey for old cards
             if self.layout.set.upper() in pre_legends_sets:
                 gray = psd.get_rgb(186, 186, 186)  # Gray
@@ -1130,9 +1151,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
                     gray = flx.rgb_hex("acb0bc")  # Gray for Alpha
                     if self.layout.background == "W":
                         gray = flx.rgb_hex("9a9eaa")  # Gray for Alpha
-                    # elif self.layout.background == "U":
-                    #     gray = psd.get_rgb(133, 138, 153)  # Gray for Alpha
-
                 white_text_layers = [
                     psd.getLayer("Card Name", con.layers['TEXT_AND_ICONS']),
                     psd.getLayer("Typeline", con.layers['TEXT_AND_ICONS']),
@@ -1154,5 +1172,4 @@ class AncientTemplate (temp.NormalClassicTemplate):
                         sback = self.layout.background
                         # Use a slightly more pink version of the red frame, or softer version of the white frame
                         psd.getLayer("LEA", ("Nonland", sback, "Real-93")).visible = True
-
-        print("Breakpoint for debug here")
+        art_position_memory(self)

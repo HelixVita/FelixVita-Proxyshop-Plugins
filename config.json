@@ -1,7 +1,7 @@
 {
   "Global": {
-    "use_previously_memorized_art_positions": "auto",
-    "memorize_new_art_positions": false,
+    "art_position_memory_enabled": "auto",
+    "art_position_memorize_new": "auto",
     "smart_tombstone": true,
     "flavor_divider": "auto",
     "use_legendary_crown": false,
