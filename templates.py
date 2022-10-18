@@ -145,8 +145,6 @@ if config_json['Global']['enable_mock_copyright'] == "auto":
     config_json['Global']['enable_mock_copyright'] = True
 if config_json['Global']['smart_tombstone'] == "auto":
     config_json['Global']['smart_tombstone'] = True
-if config_json['Global']['use_legendary_crown'] == "auto" or False:
-   console.update("WARNING: Disabling of legendary crown is not yet implemented. Consider voting for this issue at https://github.com/MrTeferi/MTG-Proxyshop/issues/18")
 
 def decision_to_enable_art_position_memory(self):
     user_input = self.config_json['Global']['art_position_memory_enabled']
@@ -171,10 +169,14 @@ def decision_to_use_premium_star_between_set_and_lang(self):
         return not self.layout.scryfall['nonfoil']
 
 def decision_to_use_flavor_divider(self, layout):
+    warning_message = "WARNING: Support for the use_legendary_crown feature is poor. Please consider voting for this issue at https://github.com/MrTeferi/MTG-Proxyshop/issues/18"
     user_input = self.config_json['Global']['flavor_divider']
     if isinstance(user_input, bool):
+        if user_input:
+            print(warning_message)
         return user_input
     if  user_input == "auto":
+        console.update(warning_message)
         if layout.set.upper() in portal_frame_sets:
             return True
         elif layout.set.upper() in pre_modern_sets:
@@ -191,7 +193,7 @@ def decision_to_have_legendary_crown(self):
     if isinstance(user_input, bool):
         return user_input
     if user_input == "auto":
-        return self.layout.set.upper() not in pre_dominaria_sets
+        return self.is_legendary and self.layout.set.upper() not in pre_dominaria_sets
 
 def decision_to_use_ccghq_symbol(self):
     user_input = self.config_json['Global']['use_ccghq_set_symbols']
@@ -769,6 +771,40 @@ class NormalPlusTemplate(temp.NormalTemplate):
         art_position_memory(self)
         use_premium_star_in_coll_info_where_appropriate(self)
 
+    def enable_frame_layers(self):
+        """
+        This entire method is a copy of the original method from NormalTemplate, except for the line that says "if decision_to_have_legendary_crown(self):"
+        TODO: Ask MrTeferi if he'd be willing to add simple config option to enable/disable the crown, so that I can remove this entire method from all my custom template classes herein.
+        """
+        # Twins and p/t box
+        psd.getLayer(self.layout.twins, con.layers['TWINS']).visible = True
+        if self.is_creature: psd.getLayer(self.layout.twins, con.layers['PT_BOX']).visible = True
+        # Pinlines
+        if self.is_land: pinlines = psd.getLayerSet(con.layers['LAND_PINLINES_TEXTBOX'])
+        else: pinlines = psd.getLayerSet(con.layers['PINLINES_TEXTBOX'])
+        psd.getLayer(self.layout.pinlines, pinlines).visible = True
+        # Background
+        if self.layout.is_nyx:
+            try: psd.getLayer(self.layout.background, con.layers['NYX']).visible = True
+            except Exception as e:
+                # Template doesn't have Nyx layers
+                console.log_exception(e)
+                psd.getLayer(self.layout.background, con.layers['BACKGROUND']).visible = True
+        else: psd.getLayer(self.layout.background, con.layers['BACKGROUND']).visible = True
+        # Legendary crown
+        if decision_to_have_legendary_crown(self):
+            crown = psd.getLayerSet(con.layers['LEGENDARY_CROWN'])
+            psd.getLayer(self.layout.pinlines, crown).visible = True
+            psd.getLayer(con.layers['NORMAL_BORDER'], con.layers['BORDER']).visible = False
+            psd.getLayer(con.layers['LEGENDARY_BORDER'], con.layers['BORDER']).visible = True
+            # Nyx/Companion: Enable the hollow crown shadow and layer mask on crown, pinlines, and shadows
+            if self.layout.is_nyx or self.is_companion: self.enable_hollow_crown(crown, pinlines)
+        # Enable companion texture
+        if self.is_companion:
+            try:  # Does this template have companion layers?
+                psd.getLayer(self.layout.pinlines, con.layers['COMPANION']).visible = True
+            except Exception as e: console.log_exception(e)
+
 class MiraclePlusTemplate(temp.MiracleTemplate):
     """
     FelixVita's NormalPlus template, but for Miracle cards.
@@ -792,6 +828,40 @@ class MiraclePlusTemplate(temp.MiracleTemplate):
         normalplus_bottom_right_text(self)
         art_position_memory(self)
         use_premium_star_in_coll_info_where_appropriate(self)
+
+    def enable_frame_layers(self):
+        """
+        This entire method is a copy of the original method from NormalTemplate, except for the line that says "if decision_to_have_legendary_crown(self):"
+        TODO: Ask MrTeferi if he'd be willing to add simple config option to enable/disable the crown, so that I can remove this entire method from all my custom template classes herein.
+        """
+        # Twins and p/t box
+        psd.getLayer(self.layout.twins, con.layers['TWINS']).visible = True
+        if self.is_creature: psd.getLayer(self.layout.twins, con.layers['PT_BOX']).visible = True
+        # Pinlines
+        if self.is_land: pinlines = psd.getLayerSet(con.layers['LAND_PINLINES_TEXTBOX'])
+        else: pinlines = psd.getLayerSet(con.layers['PINLINES_TEXTBOX'])
+        psd.getLayer(self.layout.pinlines, pinlines).visible = True
+        # Background
+        if self.layout.is_nyx:
+            try: psd.getLayer(self.layout.background, con.layers['NYX']).visible = True
+            except Exception as e:
+                # Template doesn't have Nyx layers
+                console.log_exception(e)
+                psd.getLayer(self.layout.background, con.layers['BACKGROUND']).visible = True
+        else: psd.getLayer(self.layout.background, con.layers['BACKGROUND']).visible = True
+        # Legendary crown
+        if decision_to_have_legendary_crown(self):
+            crown = psd.getLayerSet(con.layers['LEGENDARY_CROWN'])
+            psd.getLayer(self.layout.pinlines, crown).visible = True
+            psd.getLayer(con.layers['NORMAL_BORDER'], con.layers['BORDER']).visible = False
+            psd.getLayer(con.layers['LEGENDARY_BORDER'], con.layers['BORDER']).visible = True
+            # Nyx/Companion: Enable the hollow crown shadow and layer mask on crown, pinlines, and shadows
+            if self.layout.is_nyx or self.is_companion: self.enable_hollow_crown(crown, pinlines)
+        # Enable companion texture
+        if self.is_companion:
+            try:  # Does this template have companion layers?
+                psd.getLayer(self.layout.pinlines, con.layers['COMPANION']).visible = True
+            except Exception as e: console.log_exception(e)
 
 class InventionPlusTemplate(temp.InventionTemplate):
     """
@@ -818,6 +888,26 @@ class InventionPlusTemplate(temp.InventionTemplate):
         normalplus_bottom_right_text(self)
         art_position_memory(self)
         use_premium_star_in_coll_info_where_appropriate(self)
+
+    def enable_frame_layers(self):
+        """
+        This entire method is a copy of the original method from InventionTemplate, except for the line that says "if decision_to_have_legendary_crown(self):"
+        TODO: Ask MrTeferi if he'd be willing to add simple config option to enable/disable the crown, so that I can remove this entire method from all my custom template classes herein.
+        """
+        # Twins and p/t box
+        psd.getLayer(self.layout.twins, con.layers['TWINS']).visible = True
+        if self.is_creature: psd.getLayer(self.layout.twins, con.layers['PT_BOX']).visible = True
+        # Pinlines / background
+        pinlines = psd.getLayerSet(con.layers['PINLINES_TEXTBOX'])
+        psd.getLayer(self.layout.pinlines, pinlines).visible = True
+        psd.getLayer(self.layout.background, con.layers['BACKGROUND']).visible = True
+        # legendary crown
+        if decision_to_have_legendary_crown(self):
+            crown = psd.getLayerSet(con.layers['LEGENDARY_CROWN'])
+            psd.getLayer(self.layout.pinlines, crown).visible = True
+            psd.getLayer(con.layers['NORMAL_BORDER'], con.layers['BORDER']).visible = False
+            psd.getLayer(con.layers['LEGENDARY_BORDER'], con.layers['BORDER']).visible = True
+            super().enable_hollow_crown(crown, pinlines)
 
 """
 MODERN TEMPLATE
@@ -856,6 +946,41 @@ class ModernTemplate (temp.NormalTemplate):
 
     def post_text_layers(self):
         art_position_memory(self)
+
+    def enable_frame_layers(self):
+        """
+        This entire method is a copy of the original method from NormalTemplate, except for the line that says "if decision_to_have_legendary_crown(self):"
+        TODO: Ask MrTeferi if he'd be willing to add simple config option to enable/disable the crown, so that I can remove this entire method from all my custom template classes herein.
+        """
+        # Twins and p/t box
+        psd.getLayer(self.layout.twins, con.layers['TWINS']).visible = True
+        if self.is_creature: psd.getLayer(self.layout.twins, con.layers['PT_BOX']).visible = True
+        # Pinlines
+        if self.is_land: pinlines = psd.getLayerSet(con.layers['LAND_PINLINES_TEXTBOX'])
+        else: pinlines = psd.getLayerSet(con.layers['PINLINES_TEXTBOX'])
+        psd.getLayer(self.layout.pinlines, pinlines).visible = True
+        # Background
+        if self.layout.is_nyx:
+            try: psd.getLayer(self.layout.background, con.layers['NYX']).visible = True
+            except Exception as e:
+                # Template doesn't have Nyx layers
+                console.log_exception(e)
+                psd.getLayer(self.layout.background, con.layers['BACKGROUND']).visible = True
+        else: psd.getLayer(self.layout.background, con.layers['BACKGROUND']).visible = True
+        # Legendary crown
+        if decision_to_have_legendary_crown(self):
+            crown = psd.getLayerSet(con.layers['LEGENDARY_CROWN'])
+            psd.getLayer(self.layout.pinlines, crown).visible = True
+            psd.getLayer(con.layers['NORMAL_BORDER'], con.layers['BORDER']).visible = False
+            psd.getLayer(con.layers['LEGENDARY_BORDER'], con.layers['BORDER']).visible = True
+            # Nyx/Companion: Enable the hollow crown shadow and layer mask on crown, pinlines, and shadows
+            if self.layout.is_nyx or self.is_companion: self.enable_hollow_crown(crown, pinlines)
+        # Enable companion texture
+        if self.is_companion:
+            try:  # Does this template have companion layers?
+                psd.getLayer(self.layout.pinlines, con.layers['COMPANION']).visible = True
+            except Exception as e: console.log_exception(e)
+
 
 class AncientTemplate (temp.NormalClassicTemplate):
     """
