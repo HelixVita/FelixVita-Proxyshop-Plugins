@@ -4,7 +4,7 @@
     "art_position_memorize_new": "auto",
     "smart_tombstone": true,
     "flavor_divider": "auto",
-    "use_legendary_crown": false,
+    "use_legendary_crown": "auto",
     "use_set_symbol": "auto",
     "use_ccghq_set_symbols": "auto",
     "use_ccghq_set_symbol_rarity_color": "auto",
