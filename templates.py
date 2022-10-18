@@ -459,6 +459,17 @@ def normalplus_bottom_right_text(self):
     apply_custom_collector(self, emb_set, userstring=custom_collector_string)
     psd.align("AdRg", emb_group, psd.getLayer("Textbox Reference", "Text and Icons")); psd.clear_selection()
 
+def modern_collector_info(self):
+    # Layers we need
+    set_layer = psd.getLayer("Set", self.legal_layer)
+    artist_layer = psd.getLayer(con.layers['ARTIST'], self.legal_layer)
+    # Fill set info / artist info
+    apply_custom_collector(self, set_layer, userstring=self.config_json['Modern']['custom_collector_string'])
+    psd.replace_text(artist_layer, "Artist", self.layout.artist)
+    # Make text white for Lands and Black cards
+    if self.layout.background in ["Land", "B"]:
+        psd.getLayer("Invert Legal Color").visible = True
+
 def inventionplus_rules_box_gradient_fix():
     """
     Places an orange gradient inside the rules box.
@@ -835,26 +846,13 @@ class ModernTemplate (temp.NormalTemplate):
         cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
 
-    def enable_frame_layers(self):
-        super().enable_frame_layers()
-
-    def collector_info(self):
-        # Layers we need
-        set_layer = psd.getLayer("Set", self.legal_layer)
-        artist_layer = psd.getLayer(con.layers['ARTIST'], self.legal_layer)
-
-        # Fill set info / artist info
-        apply_custom_collector(self, set_layer, userstring=self.config_json['Modern']['custom_collector_string'])
-        psd.replace_text(artist_layer, "Artist", self.layout.artist)
-
-        # Make text white for Lands and Black cards
-        if self.layout.background in ["Land", "B"]:
-            psd.getLayer("Invert Legal Color").visible = True
-
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
         felix_fix_unsupported_chars_in_cardname(self)
         felix_set_symbol_logic(self)
+
+    def collector_info(self):
+        modern_collector_info(self)
 
     def post_text_layers(self):
         art_position_memory(self)
