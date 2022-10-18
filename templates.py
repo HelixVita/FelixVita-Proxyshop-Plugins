@@ -589,12 +589,12 @@ def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
         expansion_symbol.resize(112, 112)
         expansion_symbol.translate(-200, -20)
         skip_symbol_formatting(self)
-    if self.layout.set.upper() == "DRK":
+    elif self.layout.set.upper() == "DRK":
         expansion_symbol.translate(30, 10)
         skip_symbol_formatting(self)
         if self.layout.background == "B":
             psd.apply_stroke(expansion_symbol, 2, psd.get_rgb(133, 138, 153))
-    if self.layout.set.upper() == "HML":
+    elif self.layout.set.upper() == "HML":
         skip_symbol_formatting(self)
         app.activeDocument.activeLayer = expansion_symbol
         # expansion_symbol.resize(105, 105)
@@ -602,10 +602,11 @@ def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
         psd.fill_expansion_symbol(expansion_symbol, psd.get_rgb(186, 186, 186))  # Gray
         expansion_mask = psd.getLayer("Expansion Mask", con.layers['TEXT_AND_ICONS'])
         psd.apply_stroke(expansion_mask, 5, psd.rgb_white())
-    if self.layout.set.upper() == "MIR":
+        # expansion_mask.translate(0, -5)
+    elif self.layout.set.upper() == "MIR":
         skip_symbol_formatting(self)
         psd.apply_stroke(expansion_symbol, 9, psd.rgb_white())
-    if self.layout.set.upper() == "VIS":
+    elif self.layout.set.upper() == "VIS":
         skip_symbol_formatting(self)
         frame_set_symbol_layer(self, expansion_symbol)
         psd.fill_expansion_symbol(expansion_symbol, psd.rgb_white())
@@ -616,31 +617,31 @@ def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
 def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
     if self.layout.set.upper() == "ALL":
         svg_symbol.translate(-90,0)
-    if self.layout.set.upper() == "LEG":
+    elif self.layout.set.upper() == "LEG":
         scale = 0.9
         svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
         svg_symbol.translate(30, 10)
-    if self.layout.set.upper() == "FEM":
+    elif self.layout.set.upper() == "FEM":
         scale = 0.75
         svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
         svg_symbol.translate(23, -15)
-    if self.layout.set.upper() == "ICE":
+    elif self.layout.set.upper() == "ICE":
         scale = 0.8
         svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
         svg_symbol.translate(0, -10)
-    if self.layout.set.upper() == "WTH":
+    elif self.layout.set.upper() == "WTH":
         svg_symbol.translate(-30, 0)
-    if self.layout.set.upper() == "TMP":
+    elif self.layout.set.upper() == "TMP":
         psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
         scale = 0.85
         svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
         svg_symbol.translate(-35,4)
-    if self.layout.set.upper() == "STH":
+    elif self.layout.set.upper() == "STH":
         psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
         scale = 0.75
         svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
         svg_symbol.translate(-30,0)
-    if self.layout.set.upper() == "PTK":
+    elif self.layout.set.upper() == "PTK":
         psd.apply_stroke(svg_symbol, 8, psd.rgb_white())
         psd.rasterize_layer_style(svg_symbol)
         psd.apply_stroke(svg_symbol, 4, psd.rgb_black())
@@ -653,19 +654,19 @@ def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
     # Stroke thickness
     if self.layout.set.upper() in ["UDS", "MMQ", "JUD", "APC"]:
         psd.apply_stroke(svg_symbol, 1, psd.rgb_white())
-    if self.layout.set.upper() in ["SCG"]:
+    elif self.layout.set.upper() in ["SCG"]:
         psd.apply_stroke(svg_symbol, 3, psd.rgb_white())
-    if self.layout.set.upper() in ["EXO", "UDS", "S99"]:
+    elif self.layout.set.upper() in ["EXO", "UDS", "S99"]:
         psd.apply_stroke(svg_symbol, 4, psd.rgb_white())
-    if self.layout.set.upper() in ["INV"]:
+    elif self.layout.set.upper() in ["INV"]:
         psd.apply_stroke(svg_symbol, 6, psd.rgb_white())
-    if self.layout.set in post_ancient_sets and decision_to_use_timeshifted_rarity_for_ccghq(self):
+    elif self.layout.set in post_ancient_sets and decision_to_use_timeshifted_rarity_for_ccghq(self):
         psd.apply_stroke(svg_symbol, 5, psd.rgb_white())
     # Resize
     if self.layout.set.upper() in ["NEM", "MMQ", "EXO", "LGN"]:
         scale = 0.9
         svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
-    if self.layout.set.upper() in ["ONS"]:
+    elif self.layout.set.upper() in ["ONS"]:
         scale = 0.95
         svg_symbol.resize(scale*100, scale*100, ps.AnchorPosition.MiddleRight)
     # Vertical shift
@@ -674,13 +675,13 @@ def apply_set_specific_svg_symbol_adjustments(self, svg_symbol):
     # Horizontal shift
     if self.layout.set.upper() in ["EXO", "UDS", "SCG", "S99", "TOR"]:
         svg_symbol.translate(-30,0)
-    if self.layout.set.upper() in []:
+    elif self.layout.set.upper() in []:
         svg_symbol.translate(-25,0)
-    if self.layout.set.upper() in ["JUD", "LGN", "PCY", "MMQ", "ODY", "PLS"]:
+    elif self.layout.set.upper() in ["JUD", "LGN", "PCY", "MMQ", "ODY", "PLS"]:
         svg_symbol.translate(-15,0)
-    if self.layout.set.upper() in ["ONS", "APC", "NEM"]:
+    elif self.layout.set.upper() in ["ONS", "APC", "NEM"]:
         svg_symbol.translate(-10,0)
-    if self.layout.set.upper() in ["ULG", "USG", "PLS"]:
+    elif self.layout.set.upper() in ["ULG", "USG", "PLS"]:
         pass
 
 # TODO: Get rid of this "unhide" function, as it's no longer needed (now that psd.getLayer has this functionality).
