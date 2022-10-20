@@ -158,7 +158,7 @@ def decision_to_memorize_new_art_position(self):
     if isinstance(user_input, bool):
         return user_input
     if  user_input == "auto":
-        return not self.current_art_pos_entry_exists
+        return decision_to_enable_art_position_memory(self) and not self.current_art_pos_entry_exists
 
 def decision_to_use_premium_star_between_set_and_lang(self):
     user_input = self.config_json['Normal']['use_premium_star_between_set_and_lang']
@@ -510,6 +510,8 @@ def tombstone_decision_matrix(self) -> bool:
     return decision
 
 def art_position_memory(self):
+    if not decision_to_enable_art_position_memory(self):
+        return
     # Find the CSV file or create it (plus folders) if it doesn't exist.
     csv_folder = "memorized-art-positions"
     csv_name = os.path.splitext(self.template_file_name.split('/')[-1])[0] + ".csv"
@@ -836,7 +838,7 @@ class MiraclePlusTemplate(temp.MiracleTemplate):
         """
         # Twins and p/t box
         psd.getLayer(self.layout.twins, con.layers['TWINS']).visible = True
-        if self.is_creature: psd.getLayer(self.layout.twins, con.layers['PT_BOX']).visible = True
+        if self.is_creature: psd.getLayer(self.layout.twins, con.layers['PT_BOX']).visible = True  #@IgnoreException
         # Pinlines
         if self.is_land: pinlines = psd.getLayerSet(con.layers['LAND_PINLINES_TEXTBOX'])
         else: pinlines = psd.getLayerSet(con.layers['PINLINES_TEXTBOX'])
