@@ -1,8 +1,8 @@
 {
   "Global": {
-    "art_position_memory_enabled": "auto",
+    "art_position_memory_enabled": false,
     "art_position_memorize_new": "auto",
-    "smart_tombstone": true,
+    "smart_tombstone": "auto",
     "flavor_divider": "auto",
     "use_legendary_crown": "auto",
     "use_set_symbol": "auto",
@@ -10,7 +10,7 @@
     "use_ccghq_set_symbol_rarity_color": "auto",
     "use_ccghq_timeshifted_rarity_color": "auto",
     "thicker_collector_info": false,
-    "enable_mock_copyright": true
+    "enable_mock_copyright": false
   },
   "Ancient": {
     "use_1993_frame": "auto",

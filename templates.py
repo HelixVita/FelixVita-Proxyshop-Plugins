@@ -142,7 +142,7 @@ config_json = core.import_json_config(Path(Path(__file__).parent.resolve(), "con
 if config_json['Global']['thicker_collector_info'] == "auto":
     config_json['Global']['thicker_collector_info'] = False
 if config_json['Global']['enable_mock_copyright'] == "auto":
-    config_json['Global']['enable_mock_copyright'] = True
+    config_json['Global']['enable_mock_copyright'] = False
 if config_json['Global']['smart_tombstone'] == "auto":
     config_json['Global']['smart_tombstone'] = True
 
