@@ -77,7 +77,7 @@ Before you begin, make sure you are using the right version of Proxyshop. The Fe
 
     ![image](https://user-images.githubusercontent.com/102387379/193914068-3e5020e9-c823-4f09-868d-c7a2c5a06c73.png)
 
-1. Create another new folder in `templates` named `CCGHQ`, then download the CCGHQ Set Symbol SVG files from [here](https://www.dropbox.com/sh/66vu99o8e4yo2vy/AAAijXj6WEoPbcn2Mxeafjzqa) and place them inside, so that the path looks like this:
+1. Optional: Create another new folder in `templates` named `CCGHQ`, then download the CCGHQ Set Symbol SVG files from [here](https://www.dropbox.com/sh/66vu99o8e4yo2vy/AAAijXj6WEoPbcn2Mxeafjzqa) and place them inside, so that the path looks like this:
 
     ![image](https://user-images.githubusercontent.com/102387379/191598378-3e36f318-6345-49e6-9be0-d210b594c387.png)
 
@@ -86,6 +86,8 @@ Before you begin, make sure you are using the right version of Proxyshop. The Fe
     ![image](https://user-images.githubusercontent.com/102387379/191357752-ebe486c1-59d9-480f-bb55-639ba64a7753.png)
 
 ## A Note Regarding the CCGHQ Set Symbol SVGs
+
+Downloading these is completely optional. All the plugins will run completely fine without it. They just make the set symbols look a bit better (imho).
 
 When enabled, Proxyshop will attempt to use CCGHQ set symbol SVGs instead of generating set symbols using the info from `symbols.json`, except when:
 
