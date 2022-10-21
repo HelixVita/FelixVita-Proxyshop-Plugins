@@ -160,13 +160,13 @@ def decision_to_memorize_new_art_position(self):
     if  user_input == "auto":
         return decision_to_enable_art_position_memory(self) and not self.current_art_pos_entry_exists
 
-def decision_to_use_premium_star_between_set_and_lang(self):
+def decision_to_use_premium_star_between_set_and_lang(self, layout):
     user_input = self.config_json['Normal']['use_premium_star_between_set_and_lang']
     if isinstance(user_input, bool):
         return user_input
     if user_input == "auto":
         # If no nonfoil printing of the card exists in this set, then use the "premium" star instead of the regular dot:
-        return not self.layout.scryfall['nonfoil']
+        return not layout.scryfall['nonfoil']
 
 def decision_to_use_flavor_divider(self, layout):
     user_input = self.config_json['Global']['flavor_divider']
@@ -340,7 +340,7 @@ def felix_set_symbol_logic(self):
                         console.update("Attempting use CCGHQ set symbol...")
                     use_common_rarity_color = not decision_to_use_ccghq_symbol_rarity(self)
                     use_timeshifted_rarity_color = decision_to_use_timeshifted_rarity_for_ccghq(self)
-                    set_symbol_layer = load_symbol_svg(self, use_common_rarity_color, use_timeshifted_rarity_color)
+                    set_symbol_layer = load_symbol_svg(self, use_common_rarity_color, use_timeshifted_rarity_color)  #@IgnoreException
                     skip_symbol_formatting(self)
                     reassign_symbol_reference(self, set_symbol_layer)
                     expansion_symbol.visible = False
@@ -381,7 +381,7 @@ def load_symbol_svg(self, no_rarity: bool = False, timeshifted: bool = False):
             svg_path = svg_c_original_path
     # Select the "Card Name" layer so that the new set symbol layer is created next to it
     app.activeDocument.activeLayer = psd.getLayer(con.layers['NAME'], con.layers['TEXT_AND_ICONS'])
-    set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))
+    set_symbol_layer = psd.paste_file_into_new_layer(str(svg_path.resolve()))  #@IgnoreException
     return set_symbol_layer
 
 def import_custom_symbols_json(layout):
@@ -479,6 +479,31 @@ def inventionplus_rules_box_gradient_fix():
     flx.convert_to_layers()
     emb_group = psd.getLayer(f"{orange_path.stem}")
     psd.getLayer("CanvasSize", emb_group).visible = False
+
+def normalplus_bottom_collector_star_font_fix(self, layout):
+    """
+    Replaces the "Collector" layer group (in Legal group) with a new one which is identical in all aspects except that the
+    dot char `•` uses the "Relay-Medium" font instead of "Gotham", as this is needed in order to make the "star" char display
+    correctly on foil and premium cards that use star instead of dot.
+    """
+    if decision_to_use_premium_star_between_set_and_lang(self, layout):
+        try:
+            psb_path = Path("templates", "FelixVita", "CollectorBottomWithRelayFont.psb")
+            existing_collector_group = psd.getLayer("Collector", "Legal")
+            app.activeDocument.activeLayer = existing_collector_group
+            embedded = flx.place_embedded(str(psb_path.resolve()))
+            existing_collector_group.remove()
+            flx.convert_to_layers()
+            new_collector_group = psd.getLayer(f"{psb_path.stem}", "Legal")
+            if not new_collector_group:
+                new_collector_group = psd.getLayer(f"{psb_path.stem} - Smart Object Group", "Legal")
+            new_collector_group.layer.name = "Collector"
+            psd.getLayer("CanvasSize", new_collector_group).visible = False
+            new_collector_group.visible = False
+
+        except:
+            self.config_json['Normal']['use_premium_star_between_set_and_lang'] = False
+            console.update("Failed to replace Collector layer group with a new one. Falling back to using dot instead of star.")
 
 def tombstone_decision_matrix(self) -> bool:
     decision = (
@@ -581,11 +606,10 @@ def art_position_memory(self):
             for row in self.art_pos_data:
                 writer.writerow(row)
 
-def use_premium_star_in_coll_info_where_appropriate(self):
-    if decision_to_use_premium_star_between_set_and_lang(self):
+def use_premium_star_in_coll_info_where_appropriate(self, layout):
+    if decision_to_use_premium_star_between_set_and_lang(self, layout):
         collector_bottom = psd.getLayer("Bottom", ("Legal", "Collector"))
-        # psd.replace_text(collector_bottom, "•", "µ∂∑∏∫¬≈")
-        console.update("Changing of dot to star is not yet implemented (WIP).")
+        psd.replace_text(collector_bottom, "•", "µ")
 
 unsupported_chars_dict = {
     "á": "a",  # Example: "Marton Stromgald"
@@ -759,18 +783,19 @@ class NormalPlusTemplate(temp.NormalTemplate):
         cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
         felix_legendary_crown_logic(self)
+        normalplus_bottom_collector_star_font_fix(self, layout)
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
         felix_fix_unsupported_chars_in_cardname(self)
-        felix_set_symbol_logic(self)
         felix_fix_unsupported_chars_in_artist_name(self)
+        felix_set_symbol_logic(self)
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
         normalplus_bottom_right_text(self)
+        use_premium_star_in_coll_info_where_appropriate(self, self.layout)
         art_position_memory(self)
-        use_premium_star_in_coll_info_where_appropriate(self)
 
 class MiraclePlusTemplate(temp.MiracleTemplate):
     """
@@ -784,18 +809,19 @@ class MiraclePlusTemplate(temp.MiracleTemplate):
         cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
         felix_legendary_crown_logic(self)
+        normalplus_bottom_collector_star_font_fix(self, layout)
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
         felix_fix_unsupported_chars_in_cardname(self)
-        felix_set_symbol_logic(self)
         felix_fix_unsupported_chars_in_artist_name(self)
+        felix_set_symbol_logic(self)
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
         normalplus_bottom_right_text(self)
+        use_premium_star_in_coll_info_where_appropriate(self, self.layout)
         art_position_memory(self)
-        use_premium_star_in_coll_info_where_appropriate(self)
 
 class InventionPlusTemplate(temp.InventionTemplate):
     """
@@ -810,19 +836,21 @@ class InventionPlusTemplate(temp.InventionTemplate):
         cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
         felix_legendary_crown_logic(self)
+        normalplus_bottom_collector_star_font_fix(self, layout)
+
         inventionplus_rules_box_gradient_fix()
 
     def basic_text_layers(self, text_and_icons):
         super().basic_text_layers(text_and_icons)
         felix_fix_unsupported_chars_in_cardname(self)
-        felix_set_symbol_logic(self)
         felix_fix_unsupported_chars_in_artist_name(self)
+        felix_set_symbol_logic(self)
 
     def post_text_layers(self):
         normalplus_collector_fix(self)
         normalplus_bottom_right_text(self)
+        use_premium_star_in_coll_info_where_appropriate(self, self.layout)
         art_position_memory(self)
-        use_premium_star_in_coll_info_where_appropriate(self)
 
 """
 MODERN TEMPLATE

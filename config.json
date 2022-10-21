@@ -21,6 +21,6 @@
   },
   "Normal": {
     "custom_collector_string": "<PrintYear> Proxy * Not for Sale",
-    "use_premium_star_between_set_and_lang": false
+    "use_premium_star_between_set_and_lang": "auto"
   }
 }
