@@ -506,7 +506,7 @@ def load_watermark(self):
         console.update("Watermark not found: " + watermark)
         return
     # Load the watermark smart object from file
-    psb_path = Path("templates", "FelixVita", "Watermark4.psb")  # TODO: Change this to "Watermark.psb" once done testing
+    psb_path = Path("templates", "FelixVita", "watermarks.psb")  # TODO: Change this to "Watermark.psb" once done testing
     app.activeDocument.activeLayer = psd.getLayer("Legendary Crown")
     emb = flx.place_embedded(str(psb_path.resolve()))
     flx.convert_to_layers()
@@ -522,7 +522,7 @@ def load_watermark(self):
     wm_color = self.layout.pinlines
     if not len(wm_color) == 2:
         pass
-    elif layergroup_name != "guild":
+    elif layergroup_name not in ["guild", "school"]:
         wm_color = "Gold"
     else:
         wm_color, wm_color_two = wm_color
