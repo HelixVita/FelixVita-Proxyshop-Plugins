@@ -232,6 +232,12 @@ def decision_to_use_1993_frame(self):
     if user_input == "auto":
         return self.layout.set.upper() in pre_mirage_sets
 
+def decision_to_enable_watermark(self):
+    user_input = self.config_json['Global']['enable_watermark']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        return True
 
 
 """
@@ -456,6 +462,78 @@ def normalplus_bottom_right_text(self):
         psd.getLayer("Copyleft", tmc).visible = False
     apply_custom_collector(self, emb_set, userstring=custom_collector_string)
     psd.align("AdRg", emb_group, psd.getLayer("Textbox Reference", "Text and Icons")); psd.clear_selection()
+
+def modern_remove_mock_copyright(self):
+    """
+    Removes the "BS & Copyleft" copyright line from the bottom left of the card.
+    Intended only for use with the FelixVita "Modern" template.
+    """
+    psd.getLayer("BS & Copyleft", con.layers['LEGAL']).visible = False
+    psd.align("AdLf", psd.getLayer("Set", con.layers['LEGAL']), psd.getLayer("ccghq_paintbrush_black", con.layers['LEGAL'])); psd.clear_selection()
+
+def load_watermark(self):
+    if not decision_to_enable_watermark(self) or not 'watermark' in self.layout.scryfall.keys():
+        return
+    d = {
+    "ability": ["foretell"],
+    "clan": ["abzan", "atarka", "dromoka", "jeskai", "kolaghan", "mardu", "ojutai", "silumgar", "sultai", "temur"],
+    "faction": ["agents-of-sneak", "crossbreed-labs", "goblin-explosioneers", "league-of-dastardly-doom", "order-of-the-widget"],
+    "family": ["brokers", "cabaretti", "maestros","obscura", "riveteers"],
+    "guild": ["azorius", "boros", "dimir", "golgari", "gruul", "izzet", "orzhov", "rakdos", "selesnya", "simic"],
+    "misc": ["dci", "star"],
+    "polis": ["akros", "meletis", "setessa"],
+    "school": ["lorehold", "prismari", "silverquill", "quandrix", "witherbloom"],
+    "wubrg": ["w", "u", "b", "r", "g"],
+    "other": ["mirran", "phyrexian", "planeswalker", "purple"]
+    }
+    implemented = ["ability", "clan", "family", "guild", "misc", "school", "other"]
+    not_implemented = ["faction", "polis", "wubrg"]
+    watermark = self.layout.scryfall['watermark']
+    for category in not_implemented:
+        members = d[category]
+        if watermark in members:
+            console.update("Watermark not yet implemented: " + watermark)
+            return
+    layer_name = None
+    layergroup_name = None
+    for category in implemented:
+        members = d[category]
+        if watermark in members:
+            layer_name = watermark if category in ["wubrg", "other"] else f"{category}-{watermark}"
+            layergroup_name = category
+            break
+    if not any([layer_name, layergroup_name]):
+        console.update("Watermark not found: " + watermark)
+        return
+    # Load the watermark smart object from file
+    psb_path = Path("templates", "FelixVita", "Watermark4.psb")  # TODO: Change this to "Watermark.psb" once done testing
+    app.activeDocument.activeLayer = psd.getLayer("Legendary Crown")
+    emb = flx.place_embedded(str(psb_path.resolve()))
+    flx.convert_to_layers()
+    emb_group = psd.getLayer(f"{psb_path.stem}")
+    if not emb_group:
+        emb_group = psd.getLayer(f"{psb_path.stem} - Smart Object Group")
+    psd.getLayer("CanvasSize", emb_group).visible = False
+    # Unhide the proper watermark
+    graphic = psd.getLayer("Graphic", emb_group)
+    layergroup = psd.getLayer(layergroup_name, graphic)
+    psd.getLayer(layer_name, layergroup).visible = True
+    # Set the watermark's color
+    wm_color = self.layout.pinlines
+    if not len(wm_color) == 2:
+        pass
+    elif layergroup_name != "guild":
+        wm_color = "Gold"
+    else:
+        wm_color, wm_color_two = wm_color
+        c1 = psd.getLayer(wm_color, emb_group)
+        c2 = psd.getLayer(wm_color_two, emb_group)
+        c2.duplicate(c1, ps.ElementPlacement.PlaceAfter)
+        psd.set_layer_mask(c1, True)
+    psd.getLayer(wm_color, emb_group).visible = True
+    # Add extra brightness to the family watermarks
+    if layergroup_name == "family":
+        psd.getLayer("family-brightness", emb_group).visible = True
 
 def modern_collector_info(self):
     # Layers we need
@@ -792,6 +870,7 @@ class NormalPlusTemplate(temp.NormalTemplate):
         felix_set_symbol_logic(self)
 
     def post_text_layers(self):
+        load_watermark(self)
         normalplus_collector_fix(self)
         normalplus_bottom_right_text(self)
         use_premium_star_in_coll_info_where_appropriate(self, self.layout)
@@ -891,7 +970,9 @@ class ModernTemplate (temp.NormalTemplate):
             modern_remove_mock_copyright(self)
 
     def post_text_layers(self):
+        load_watermark(self)
         art_position_memory(self)
+
 
 class AncientTemplate (temp.NormalClassicTemplate):
     """

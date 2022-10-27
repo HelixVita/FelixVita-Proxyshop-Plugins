@@ -10,7 +10,8 @@
     "use_ccghq_set_symbol_rarity_color": "auto",
     "use_ccghq_timeshifted_rarity_color": "auto",
     "thicker_collector_info": false,
-    "enable_mock_copyright": false
+    "enable_mock_copyright": false,
+    "enable_watermark": true
   },
   "Ancient": {
     "use_1993_frame": "auto",
