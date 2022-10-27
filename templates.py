@@ -887,6 +887,8 @@ class ModernTemplate (temp.NormalTemplate):
 
     def collector_info(self):
         modern_collector_info(self)
+        if not self.config_json['Global']['enable_mock_copyright']:
+            modern_remove_mock_copyright(self)
 
     def post_text_layers(self):
         art_position_memory(self)
