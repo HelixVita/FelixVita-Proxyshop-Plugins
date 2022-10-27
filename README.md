@@ -77,7 +77,7 @@ Before you begin, make sure you are using the right version of Proxyshop. The Fe
 
     ![image](https://user-images.githubusercontent.com/102387379/193914068-3e5020e9-c823-4f09-868d-c7a2c5a06c73.png)
 
-1. Optional: Create another new folder in `templates` named `CCGHQ`, then download the CCGHQ Set Symbol SVG files from [here](https://www.dropbox.com/sh/66vu99o8e4yo2vy/AAAijXj6WEoPbcn2Mxeafjzqa) and place them inside, so that the path looks like this:
+1. Optional (for better-looking set symbols): Create another new folder in `templates` named `CCGHQ`, then download the CCGHQ Set Symbol SVG files from [here](https://www.dropbox.com/sh/e84z5l5za99uwah/AAAKbGdgCW1uM1wZ3T128OYya?dl=0) and place them inside, so that the path looks like this:
 
     ![image](https://user-images.githubusercontent.com/102387379/191598378-3e36f318-6345-49e6-9be0-d210b594c387.png)
 
@@ -125,6 +125,7 @@ Here is a table summarizing what each config option does.
 | enable_mock_copyright                 | adds a "BS & Copyleft" text, for a more authentic look at a glance; please don't create renders for mpcfill with this setting, as it looks "too real"                                                                                                              | false   | false                                                                                                                                   | none                                                                                                                                                                                                      |
 | use_1993_frame                        | (ancient) use the 1993 version of the classic frame instead of the default 1997 version                                                                                                                                                                            | auto    | true for cards from any pre-Mirage sets                                                                                                 | [missing land and gold frame](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/9); and [inter-1993 nuances are missing](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/8) |
 | use_premium_star_between_set_and_lang | (normalplus) use a star instead of a dot in the bottom part of the collector's info                                                                                                                                                                                | auto    | true if a nonfoil printing does not exist for the card in question (for example, the MPS version of Sol Ring)                           | none                                                                                                                                                                                                      |
+| enable_watermark                      | apply watermark in rules text box for cards that were printed with watermarks (e.g. guild symbols, foretell watermark, etc.)                                                                                                                                       | true    | true                                                                                                                                    | not all watermarks are implemented yet                                                                                                                                                                      |
 
 #### The `custom_collector_string` option
 
@@ -149,3 +150,10 @@ Then this will produce something like:
 > 2004 Joe Proxy • Not for Sanctioned Play • DST 140/165 U
 
 and if any collector info is missing, it will simply be omitted.
+
+## Thank you
+
+- Magic Proxies server on Discord — for helping me get started, and for being a fantastic community
+- Investigamer — for creating and maintaining Proxyshop
+- lmonair — for the 1993 frame assets
+- Day7 — for hosting the most up-to-date dropbox repo of CCGHQ set symbol SVGs (linked in instructions, step 5)
