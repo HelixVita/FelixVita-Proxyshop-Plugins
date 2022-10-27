@@ -876,6 +876,14 @@ class NormalPlusTemplate(temp.NormalTemplate):
         use_premium_star_in_coll_info_where_appropriate(self, self.layout)
         art_position_memory(self)
 
+class SnowPlusTemplate(NormalPlusTemplate):
+    """
+    A snow template with textures from Kaldheim's snow cards.
+    Identical to NormalPlusTemplate.
+    """
+    template_file_name = "snow"
+    template_suffix = "SnowPlus"
+
 class MiraclePlusTemplate(temp.MiracleTemplate):
     """
     FelixVita's NormalPlus template, but for Miracle cards.
