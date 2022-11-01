@@ -529,7 +529,7 @@ def load_watermark(self):
         c1 = psd.getLayer(wm_color, emb_group)
         c2 = psd.getLayer(wm_color_two, emb_group)
         c2.duplicate(c1, ps.ElementPlacement.PlaceAfter)
-        psd.set_layer_mask(c1, True)
+        psd.enable_mask(c1)
     psd.getLayer(wm_color, emb_group).visible = True
     # Add extra brightness to the family watermarks
     if layergroup_name == "family":
@@ -1010,6 +1010,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
             else:
                 self.frame_style = "Real-93"
 
+        self.is_abur_dual = self.layout.scryfall['name'] in original_dual_lands and layout.set.upper() in ["LEA", "LEB", "2ED", "3ED"]
+
     def basic_text_layers(self, text_and_icons):
 
         if self.frame_style == "Real-93":
@@ -1058,7 +1060,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
         # Select the collector info layer:
         app.activeDocument.activeLayer = collector_layer
         # Make the collector's info text black instead of white if the following conditions are met:  # TODO: This should probably be moved out of the collector_info() function, and into the post_text_layers() function, or something like that.
-        if (
+        # TODO: Remove abur dual from this condition once a Real-93 version of the dual lands is made.
+        if not self.is_abur_dual and (
             (color == "W") or
             (color == "U" and setcode in pre_hml_sets) or
             (color == "R" and setcode in pre_mmq_sets) or
@@ -1093,7 +1096,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
             c_layer.visible = False
 
         # For old cards (pre-Mirage), left-justify the artist and collector info (and remove trademark symbol)
-        if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"]:
+        if self.layout.set.upper() in pre_exodus_sets + ["P02", "PTK"] and not self.is_abur_dual:
+            # TODO: Remove abur dual from this condition once a Real-93 version of the dual lands is made.
             tm_layer.visible = False
             coll_combo = psd.merge_layers(collector_layer, tmc)
             lalign_ref = psd.getLayer("Left-Aligned Artist Reference", con.layers['LEGAL'])
@@ -1190,25 +1194,15 @@ class AncientTemplate (temp.NormalClassicTemplate):
             # TMP and JUD are excluded here because those dual lands instead have the same box as colorless lands like Crystal Quarry. -- Examples: "Caldera Lake (TMP)", "Riftstone Portal (JUD)"
                 if cardname in original_dual_lands or setcode in ["LEA", "LEB", "2ED", "3ED"]:
                     # ABUR Duals (with the classic 'cascading squares' design in the rules box)
-                    layers_to_unhide.append((thicker_trim_stroke, modifications, land))
-                    abur_combined_groups = ["WU, UB, UR", "GU, BG, RG, GW"]
-                    use_combined_group = None
-                    for abur_group in abur_combined_groups:
-                        pairs = abur_group.split(", ")
-                        if pinlines in pairs:
-                            use_combined_group = abur_group
-                            break
-                    if use_combined_group:
-                        selected_abur_group = use_combined_group
-                        abur_first_color = "".join(set.intersection(*map(set, selected_abur_group.split(", "))))
-                        abur_second_color = pinlines.replace(abur_first_color, "")
-                        groups_to_unhide.append((selected_abur_group, abur, land))
-                        layers_to_unhide.append((abur_second_color, abur, land))
-                    else:
-                        selected_abur_group = pinlines
-                        abur_second_color = "R" if pinlines in ["RW", "BR"] else "B"
-                        groups_to_unhide.append((selected_abur_group, abur, land))
-                        layers_to_unhide.append((abur_second_color, abur, land))
+                    psd.getLayer("Color-correction", (land, abur)).visible = True
+                    c1, c2 = pinlines
+                    psd.getLayer(c1, (land, abur)).visible = True
+                    psd.getLayer(c2, (land, abur)).visible = True
+                    # Unhide the mask of the color that appears first in the abur colors layer order in the PSD (not the usual WUBRG order)
+                    abur_layers_order = ["G", "U", "W", "B", "R"]
+                    mask_color = c1 if abur_layers_order.index(c1) < abur_layers_order.index(c2) else c2
+                    psd.enable_mask(psd.getLayer(mask_color, (land, abur)))
+                    print("breakpoint")
                 else:
                     # Regular duals (vertically split half-n-half color) -- Examples: Adarkar Wastes (6ED)
                     # TODO: Make sure this does in fact result in "Crystal Quarry" type frame for TMP and JUD duals like "Caldera Lake" and "Riftstone Portal"
