@@ -748,7 +748,7 @@ def apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol):
         psd.apply_stroke(expansion_symbol, 9, psd.rgb_white())
     elif self.layout.set.upper() == "VIS":
         skip_symbol_formatting(self)
-        frame_set_symbol_layer(self, expansion_symbol)
+        frame_set_symbol_layer(expansion_symbol)
         psd.fill_expansion_symbol(expansion_symbol, psd.rgb_white())
     else:
         # Tested for the following sets: TOR,
