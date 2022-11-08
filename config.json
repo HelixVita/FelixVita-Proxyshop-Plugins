@@ -3,19 +3,19 @@
     "art_position_memory_enabled": false,
     "art_position_memorize_new": "auto",
     "art_position_autoalign": "auto",
-    "flavor_divider": "auto",
-    "use_tombstone_icon": "auto",
-    "use_legendary_crown": "auto",
-    "use_set_symbol": "auto",
-    "use_ccghq_set_symbols": "auto",
-    "use_ccghq_set_symbol_rarity_color": "auto",
-    "use_ccghq_timeshifted_rarity_color": "auto",
+    "flavor_divider": "authentic",
+    "use_tombstone_icon": "authentic",
+    "use_legendary_crown": "authentic",
+    "use_set_symbol": "authentic",
+    "use_ccghq_set_symbols": "authentic",
+    "use_ccghq_set_symbol_rarity_color": "authentic",
+    "use_ccghq_timeshifted_rarity_color": "authentic",
     "thicker_collector_info": false,
     "enable_mock_copyright": false,
     "enable_watermark": true
   },
   "Ancient": {
-    "use_1993_frame": "auto",
+    "use_1993_frame": "authentic",
     "custom_collector_string": "<PrintYear> Proxy * Not for Sale * <Set> <CollectorNumber>/<CardCount> <Rarity>"
   },
   "Modern": {
@@ -23,6 +23,6 @@
   },
   "Normal": {
     "custom_collector_string": "<PrintYear> Proxy * Not for Sale",
-    "use_premium_star_between_set_and_lang": "auto"
+    "use_premium_star_between_set_and_lang": "authentic"
   }
 }

@@ -138,18 +138,14 @@ LOAD CONFIGURATION
 
 config_json = core.import_json_config(Path(Path(__file__).parent.resolve(), "config.json"))
 
-# Defaults for auto
-if config_json['Global']['thicker_collector_info'] == "auto":
-    config_json['Global']['thicker_collector_info'] = False
-if config_json['Global']['enable_mock_copyright'] == "auto":
-    config_json['Global']['enable_mock_copyright'] = False
-
 def decision_to_enable_art_position_memory(self):
     user_input = self.config_json['Global']['art_position_memory_enabled']
     if isinstance(user_input, bool):
         return user_input
     if user_input == "auto":
         return True
+    else:
+        raise ValueError("Invalid user-defined value for config option 'art_position_memory_enabled': " + user_input)
 
 def decision_to_memorize_new_art_position(self):
     user_input = config_json['Global']['art_position_memorize_new']
@@ -157,6 +153,8 @@ def decision_to_memorize_new_art_position(self):
         return user_input
     if  user_input == "auto":
         return decision_to_enable_art_position_memory(self) and not self.current_art_pos_entry_exists
+    else:
+        raise ValueError("Invalid user-defined value for config option 'art_position_memorize_new': " + user_input)
 
 def decision_to_autoalign_art_position(self):
     user_input = config_json['Global']['art_position_autoalign']
@@ -166,20 +164,24 @@ def decision_to_autoalign_art_position(self):
         art_file = Path(self.layout.file)
         hq_art_file = art_file.parent / "autoalign" / art_file.name
         return hq_art_file.exists()
+    else:
+        raise ValueError("Invalid user-defined value for config option 'art_position_autoalign': " + user_input)
 
 def decision_to_use_premium_star_between_set_and_lang(self, layout):
     user_input = self.config_json['Normal']['use_premium_star_between_set_and_lang']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         # If no nonfoil printing of the card exists in this set, then use the "premium" star instead of the regular dot:
         return not layout.scryfall['nonfoil']
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_premium_star_between_set_and_lang': " + user_input)
 
 def decision_to_use_flavor_divider(self, layout):
     user_input = self.config_json['Global']['flavor_divider']
     if isinstance(user_input, bool):
         return user_input
-    if  user_input == "auto":
+    if  user_input == "authentic":
         if layout.set.upper() in portal_frame_sets:
             return True
         elif layout.set.upper() in pre_modern_sets:
@@ -190,72 +192,109 @@ def decision_to_use_flavor_divider(self, layout):
             return False
         else:
             return True
+    else:
+        raise ValueError("Invalid user-defined value for config option 'flavor_divider': " + user_input)
 
 def decision_to_use_tombstone_icon(self):
     user_input = self.config_json['Global']['use_tombstone_icon']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         return "tombstone" in self.layout.frame_effects
-    elif user_input == "smart":
+    elif user_input == "remaster":
         return tombstone_decision_matrix(self)
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_tombstone_icon': " + user_input)
 
 def decision_to_use_legendary_crown(self):
     user_input = self.config_json['Global']['use_legendary_crown']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         return self.is_legendary and self.layout.set.upper() not in pre_dominaria_sets
-    elif user_input == "smart":
+    elif user_input == "remaster":
         return self.is_legendary
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_legendary_crown': " + user_input)
 
 def decision_to_use_ccghq_symbol(self):
     user_input = self.config_json['Global']['use_ccghq_set_symbols']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         if self.layout.set.upper() in pre_modern_sets:
             return self.layout.set.upper() in ancient_sets_with_felix_approved_ccghq_symbols
         else:
             return self.layout.set.upper() not in felix_rejected_ccghq_symbols
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_ccghq_set_symbols': " + user_input)
 
 def decision_to_have_set_symbol(self):
     user_input = self.config_json['Global']['use_set_symbol']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         return self.layout.set.upper() not in sets_without_set_symbol
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_set_symbol': " + user_input)
 
 def decision_to_use_ccghq_symbol_rarity(self):
     user_input = self.config_json['Global']['use_ccghq_set_symbol_rarity_color']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         return self.layout.set.upper() not in sets_without_rarity
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_ccghq_set_symbol_rarity_color': " + user_input)
 
 def decision_to_use_timeshifted_rarity_for_ccghq(self):
     user_input = self.config_json['Global']['use_ccghq_timeshifted_rarity_color']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         if Path(self.template_file_name).stem == "ancient":
             return self.layout.set.upper() in post_ancient_sets
         else:
             return False
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_ccghq_timeshifted_rarity_color': " + user_input)
 
 def decision_to_use_1993_frame(self):
     user_input = self.config_json['Ancient']['use_1993_frame']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         return self.layout.set.upper() in pre_mirage_sets
+    else:
+        raise ValueError("Invalid user-defined value for config option 'use_1993_frame': " + user_input)
+
+def decision_to_enable_thicker_collector_info(self):
+    user_input = self.config_json['Global']['thicker_collector_info']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "authentic":
+        return False
+    else:
+        raise ValueError("Invalid user-defined value for config option 'thicker_collector_info': " + user_input)
+
+def decision_to_enable_mock_copyright(self):
+    user_input = self.config_json['Global']['enable_mock_copyright']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "authentic":
+        return True
+    else:
+        raise ValueError("Invalid user-defined value for config option 'enable_mock_copyright': " + user_input)
 
 def decision_to_enable_watermark(self):
     user_input = self.config_json['Global']['enable_watermark']
     if isinstance(user_input, bool):
         return user_input
-    if user_input == "auto":
+    if user_input == "authentic":
         return True
+    else:
+        raise ValueError("Invalid user-defined value for config option 'enable_watermark': " + user_input)
+
 
 
 """
