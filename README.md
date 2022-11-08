@@ -149,6 +149,7 @@ An additional possible config value `"remaster"` exists for the following config
 
 - use_tombstone_icon
 - use_legendary_crown
+- frame_style
 
 The idea behind this `"remaster"` option is essentially:
 > "If wotc had printed the card today, it'd be printed this way"
