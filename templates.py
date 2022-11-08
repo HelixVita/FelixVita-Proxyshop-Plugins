@@ -143,8 +143,6 @@ if config_json['Global']['thicker_collector_info'] == "auto":
     config_json['Global']['thicker_collector_info'] = False
 if config_json['Global']['enable_mock_copyright'] == "auto":
     config_json['Global']['enable_mock_copyright'] = False
-if config_json['Global']['smart_tombstone'] == "auto":
-    config_json['Global']['smart_tombstone'] = True
 
 def decision_to_enable_art_position_memory(self):
     user_input = self.config_json['Global']['art_position_memory_enabled']
@@ -193,12 +191,23 @@ def decision_to_use_flavor_divider(self, layout):
         else:
             return True
 
-def decision_to_have_legendary_crown(self):
+def decision_to_use_tombstone_icon(self):
+    user_input = self.config_json['Global']['use_tombstone_icon']
+    if isinstance(user_input, bool):
+        return user_input
+    if user_input == "auto":
+        return "tombstone" in self.layout.frame_effects
+    elif user_input == "smart":
+        return tombstone_decision_matrix(self)
+
+def decision_to_use_legendary_crown(self):
     user_input = self.config_json['Global']['use_legendary_crown']
     if isinstance(user_input, bool):
         return user_input
     if user_input == "auto":
         return self.is_legendary and self.layout.set.upper() not in pre_dominaria_sets
+    elif user_input == "smart":
+        return self.is_legendary
 
 def decision_to_use_ccghq_symbol(self):
     user_input = self.config_json['Global']['use_ccghq_set_symbols']
@@ -738,7 +747,7 @@ def felix_fix_unsupported_chars_in_artist_name(self):
     self.layout.artist = felix_fix_unsupported_chars(self.layout.artist)
 
 def felix_legendary_crown_logic(self):
-    self.is_legendary = True if decision_to_have_legendary_crown(self) else False
+    self.is_legendary = True if decision_to_use_legendary_crown(self) else False
 
 def art_load_autoalign_and_match(self):
     """
@@ -1255,12 +1264,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 psd.getLayer("Real-93", backgd).visible = True
 
         # Tombstone icon in upper left corner
-        self.tombstone = None
-        if "tombstone" in self.layout.frame_effects:
-            self.tombstone = True
-        elif self.config_json['Global']['smart_tombstone'] and tombstone_decision_matrix(self):
-            self.tombstone = True
-        if self.tombstone:
+        if decision_to_use_tombstone_icon(self):
             psd.getLayer("Tombstone", con.layers['TEXT_AND_ICONS']).visible = True
 
         if not self.is_land:
