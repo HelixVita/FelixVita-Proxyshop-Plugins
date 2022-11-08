@@ -184,11 +184,11 @@ and if any collector info is missing, it will simply be omitted.
 
 This option is specific to the _Ancient_ template, and has the following possible values:
 
-- "real-93" - will render cards in the 1993 frame style (used in the sets Alpha to Alliances) by using frame assets sourced from real scans of Arabian Nights cards
-- "mock-93" - will render cards using using the colors and textures of the 1993 frame, but also using the wider rules text box and higher resolution of the 1997 frame
+- "real-93" — will render cards in the 1993 frame style (used in the sets Alpha to Alliances) by using frame assets sourced from real scans of Arabian Nights cards
+- "mock-93" — will render cards using using the colors and textures of the 1993 frame, but also using the wider rules text box and higher resolution of the 1997 frame
 - "1997" — will render cards in the 1997 frame style (used in the sets Mirage to Scourge) by using frame assets sourced from CardConjurer (heavily modified to look more authentic)
-- "authentic" - will automatically choose the frame style based on the card's set, and will use the "real-93" style for sets Alpha to Alliances, and the "1997" style for sets Mirage to Scourge
-- "remaster" - same as "1997"
+- "authentic" — will automatically choose the frame style based on the card's set, and will use the "real-93" style for sets Alpha to Alliances, and the "1997" style for sets Mirage to Scourge
+- "remaster" — same as "1997"
 
 ## Thank you
 
