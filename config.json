@@ -15,7 +15,7 @@
     "enable_watermark": true
   },
   "Ancient": {
-    "use_1993_frame": "authentic",
+    "frame_style": "authentic",
     "custom_collector_string": "<PrintYear> Proxy * Not for Sale * <Set> <CollectorNumber>/<CardCount> <Rarity>"
   },
   "Modern": {

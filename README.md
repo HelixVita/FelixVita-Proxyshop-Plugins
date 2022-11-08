@@ -125,7 +125,7 @@ Here is a table summarizing what each config option does.
 | use_ccghq_timeshifted_rarity_color    | enable the timeshifted (purple) rarity set symbol color                                                                                                                                                                                                                | authentic    | true for all post-Scourge cards if rendered with the _Ancient_ template (to indicate they've been "timeshifted" to the classic frame)   | none                                                                                                                                                                                                      |
 | thicker_collector_info                | slightly increase thickness of the collector's info / copyright line (for readability)                                                                                                                                                                                 | false   | false                                                                                                                                   | incompatible with "enable_mock_copyright"                                                                                                                                                                 |
 | enable_mock_copyright                 | adds a "BS & Copyleft" text, for a more authentic look at a glance; please don't create renders for mpcfill with this setting, as it looks "too real"                                                                                                                  | false   | false                                                                                                                                   | none                                                                                                                                                                                                      |
-| use_1993_frame                        | (ancient) use the 1993 version of the classic frame instead of the default 1997 version                                                                                                                                                                                | authentic    | true for cards from any pre-Mirage sets                                                                                                 | [missing land and gold frame](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/9); and [inter-1993 nuances are missing](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/8) |
+| use_real_93_frame                        | (ancient) use the 1993 version of the classic frame instead of the default 1997 version                                                                                                                                                                                | authentic    | true for cards from any pre-Mirage sets                                                                                                 | [missing land and gold frame](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/9); and [inter-1993 nuances are missing](https://github.com/HelixVita/FelixVita-Proxyshop-Plugins/issues/8) |
 | use_premium_star_between_set_and_lang | (normalplus) use a star instead of a dot in the bottom part of the collector's info                                                                                                                                                                                    | authentic    | true if a nonfoil printing does not exist for the card in question (for example, the MPS version of Sol Ring)                           | none                                                                                                                                                                                                      |
 | enable_watermark                      | apply watermark in rules text box for cards that were printed with watermarks (e.g. guild symbols, foretell watermark, etc.)                                                                                                                                           | true    | true                                                                                                                                    | not all watermarks are implemented yet                                                                                                                                                                    |
 
@@ -135,7 +135,7 @@ Each config option has exactly three possible values: `true`, `false`, or `"auth
 
 You must always pick one of these values. If you write something else or misspell them (for example 'True' instead of 'true'), then Proxyshop will fail.
 
-However there are three exceptions to this rule.
+However there are four exceptions to this rule.
 
 ### Exception 1: Art Position Memory
 
@@ -179,6 +179,16 @@ Then this will produce something like:
 > 2004 Joe Proxy • Not for Sanctioned Play • DST 140/165 U
 
 and if any collector info is missing, it will simply be omitted.
+
+### Exception 4: The `frame_style` option
+
+This option is specific to the _Ancient_ template, and has the following possible values:
+
+- "real-93" - will render cards in the 1993 frame style (used in the sets Alpha to Alliances) by using frame assets sourced from real scans of Arabian Nights cards
+- "mock-93" - will render cards using using the colors and textures of the 1993 frame, but also using the wider rules text box and higher resolution of the 1997 frame
+- "1997" — will render cards in the 1997 frame style (used in the sets Mirage to Scourge) by using frame assets sourced from CardConjurer (heavily modified to look more authentic)
+- "authentic" - will automatically choose the frame style based on the card's set, and will use the "real-93" style for sets Alpha to Alliances, and the "1997" style for sets Mirage to Scourge
+- "remaster" - same as "1997"
 
 ## Thank you
 

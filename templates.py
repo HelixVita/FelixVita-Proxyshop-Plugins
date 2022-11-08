@@ -259,15 +259,6 @@ def decision_to_use_timeshifted_rarity_for_ccghq(self):
     else:
         raise ValueError("Invalid user-defined value for config option 'use_ccghq_timeshifted_rarity_color': " + user_input)
 
-def decision_to_use_1993_frame(self):
-    user_input = self.config_json['Ancient']['use_1993_frame']
-    if isinstance(user_input, bool):
-        return user_input
-    if user_input == "authentic":
-        return self.layout.set.upper() in pre_mirage_sets
-    else:
-        raise ValueError("Invalid user-defined value for config option 'use_1993_frame': " + user_input)
-
 def decision_to_enable_thicker_collector_info(self):
     user_input = self.config_json['Global']['thicker_collector_info']
     if isinstance(user_input, bool):
@@ -1164,13 +1155,29 @@ class AncientTemplate (temp.NormalClassicTemplate):
         if layout.set.upper() not in pre_mirage_sets:
             con.align_classic_quote = True
 
-        self.frame_style = "CardConRemastered-97"
-        if decision_to_use_1993_frame(self):
-            if self.is_land or self.layout.background == "Gold":
-                self.frame_style = "Mock-93"  # Because ancient.psd doesn't yet have an asset for the 1993 multicolor frame or 1993 land frame
-            else:
-                self.frame_style = "Real-93"
+        user_input = self.config_json['Ancient']['frame_style']
+        if user_input == "authentic":
+            frame_style = "Real-93" if self.layout.set.upper() in pre_mirage_sets else "CardConRemastered-97"
+        elif user_input == "remaster":
+            frame_style = "CardConRemastered-97"
+        elif user_input == "real-93":
+            frame_style = "Real-93"
+        elif user_input == "mock-93":
+            frame_style = "Mock-93"
+        elif user_input == "1997":
+            frame_style = "CardConRemastered-97"
+        else:
+            raise ValueError("Invalid user-defined value for config option 'frame_style': " + user_input)
 
+        # Handle cases where ancient.psd doesn't yet have an asset for the 1993 frame, namely multicolor cards and lands
+        if frame_style == "Real-93":
+            if self.is_land or self.layout.background == "Gold":
+                console.update("Real-93 frame style is not yet available for lands or gold cards. Using Mock-93 style instead.")
+                frame_style = "Mock-93"
+
+        self.frame_style = frame_style
+
+        # Handle case of ABUR Duals Lands
         self.is_abur_dual = self.layout.scryfall['name'] in original_dual_lands and layout.set.upper() in ["LEA", "LEB", "2ED", "3ED"]
 
     def basic_text_layers(self, text_and_icons):
@@ -1328,66 +1335,74 @@ class AncientTemplate (temp.NormalClassicTemplate):
             groups_to_unhide = []
             layers_to_unhide = []
 
-            if setcode in ["ARN", "LEG", "ATQ", "ALL", "FEM", "DRK", "HML", "ICE", "4ED"]:
-                # Then use that set's unique frame
-                layers_to_unhide.append((land, wholes, land))
-                groups_to_unhide.append((setcode + " - Color", wholes, land))
-                if setcode in ["FEM", "ALL"]:
-                    # Enable thick colored trim with no black strokes
-                    groups_to_unhide.append(("Trim - " + setcode, modifications, land))
-                elif setcode != "LEG":
-                    layers_to_unhide.append((thicker_trim_stroke, modifications, land))
+            if self.frame_style == "Mock-93":
 
-            elif setcode in ["MIR", "VIS"]:
-                    # Mirage/Visions colorless lands -- Examples: Teferi's Isle (MIR), Griffin Canyon (VIS)
+                if setcode in ["ARN", "LEG", "ATQ", "ALL", "FEM", "DRK", "HML", "ICE", "4ED"]:
+                    # Then use that set's unique frame
                     layers_to_unhide.append((land, wholes, land))
-                    groups_to_unhide.append(("VIS - Color", wholes, land))
-                    groups_to_unhide.append((thicker_bevels_rules_box, modifications, land))
-                    layers_to_unhide.append((thicker_trim_stroke, modifications, land))
-                    if is_mono and setcode == "VIS":
-                        # Visions monocolor lands -- Examples: Dormant Volcano (VIS)
+                    groups_to_unhide.append((setcode + " - Color", wholes, land))
+                    if setcode in ["FEM", "ALL"]:
+                        # Enable thick colored trim with no black strokes
+                        groups_to_unhide.append(("Trim - " + setcode, modifications, land))
+                    elif setcode != "LEG":
+                        layers_to_unhide.append((thicker_trim_stroke, modifications, land))
+
+                elif setcode in ["MIR", "VIS"]:
+                        # Mirage/Visions colorless lands -- Examples: Teferi's Isle (MIR), Griffin Canyon (VIS)
+                        layers_to_unhide.append((land, wholes, land))
+                        groups_to_unhide.append(("VIS - Color", wholes, land))
+                        groups_to_unhide.append((thicker_bevels_rules_box, modifications, land))
+                        layers_to_unhide.append((thicker_trim_stroke, modifications, land))
+                        if is_mono and setcode == "VIS":
+                            # Visions monocolor lands -- Examples: Dormant Volcano (VIS)
+                            groups_to_unhide.append((pinlines, wholes, land))
+                            layers_to_unhide.append(("Trim - VIS", modifications, land))
+
+                elif is_dual and setcode not in ["TMP", "JUD"]:
+                # TMP and JUD are excluded here because those dual lands instead have the same box as colorless lands like Crystal Quarry. -- Examples: "Caldera Lake (TMP)", "Riftstone Portal (JUD)"
+                    if cardname in original_dual_lands or setcode in ["LEA", "LEB", "2ED", "3ED"]:
+                        # ABUR Duals (with the classic 'cascading squares' design in the rules box)
+                        psd.getLayer("Color-correction", (land, abur)).visible = True
+                        c1, c2 = pinlines
+                        psd.getLayer(c1, (land, abur)).visible = True
+                        psd.getLayer(c2, (land, abur)).visible = True
+                        # Unhide the mask of the color that appears first in the abur colors layer order in the PSD (not the usual WUBRG order)
+                        abur_layers_order = ["G", "U", "W", "B", "R"]
+                        mask_color = c1 if abur_layers_order.index(c1) < abur_layers_order.index(c2) else c2
+                        psd.enable_mask(psd.getLayer(mask_color, (land, abur)))
+                        print("breakpoint")
+                    else:
+                        # Regular duals (vertically split half-n-half color) -- Examples: Adarkar Wastes (6ED)
+                        # TODO: Make sure this does in fact result in "Crystal Quarry" type frame for TMP and JUD duals like "Caldera Lake" and "Riftstone Portal"
+                        left_half = pinlines[0]
+                        right_half = pinlines[1]
+                        layers_to_unhide.append((land, wholes, land))
+                        groups_to_unhide.append((neutral_land_frame_color, wholes, land))
+                        groups_to_unhide.append((left_half, halves, land))
+                        groups_to_unhide.append((right_half, wholes, land))
+                        groups_to_unhide.append((thicker_bevels_rules_box, modifications, land))
+                        layers_to_unhide.append((thicker_trim_stroke, modifications, land))
+
+                elif is_mono and cardname != "Phyrexian Tower":
+                        # Monocolored lands with colored rules box -- Examples: Rushwood Grove (MMQ), Spawning Pool (ULG)
+                        # Phyrexian Tower is excluded because it has the colorless land frame despite producing only black mana (not sure why).
+                        # TODO: Test to make sure phyrex does indeed render with the colorless land frame
+                        layers_to_unhide.append((land, wholes, land))
+                        groups_to_unhide.append((neutral_land_frame_color, wholes, land))
                         groups_to_unhide.append((pinlines, wholes, land))
-                        layers_to_unhide.append(("Trim - VIS", modifications, land))
+                        groups_to_unhide.append((thicker_bevels_rules_box, modifications, land))
+                        layers_to_unhide.append((thickest_trim_stroke, modifications, land))
+                        if setcode in ["5ED", "USG"]:
+                            # Monocolored lands with colored rules box and YELLOW TRIM -- Examples: Hollow Trees (5ED)
+                            layers_to_unhide.append(("Trim 5ED-USG", modifications, land))
+                            if pinlines == "W":
+                                layers_to_unhide.append(("W - Color Correction - 5ED-USG", pinlines, wholes, land))
 
-            elif is_dual and setcode not in ["TMP", "JUD"]:
-            # TMP and JUD are excluded here because those dual lands instead have the same box as colorless lands like Crystal Quarry. -- Examples: "Caldera Lake (TMP)", "Riftstone Portal (JUD)"
-                if cardname in original_dual_lands or setcode in ["LEA", "LEB", "2ED", "3ED"]:
-                    # ABUR Duals (with the classic 'cascading squares' design in the rules box)
-                    psd.getLayer("Color-correction", (land, abur)).visible = True
-                    c1, c2 = pinlines
-                    psd.getLayer(c1, (land, abur)).visible = True
-                    psd.getLayer(c2, (land, abur)).visible = True
-                    # Unhide the mask of the color that appears first in the abur colors layer order in the PSD (not the usual WUBRG order)
-                    abur_layers_order = ["G", "U", "W", "B", "R"]
-                    mask_color = c1 if abur_layers_order.index(c1) < abur_layers_order.index(c2) else c2
-                    psd.enable_mask(psd.getLayer(mask_color, (land, abur)))
-                    print("breakpoint")
                 else:
-                    # Regular duals (vertically split half-n-half color) -- Examples: Adarkar Wastes (6ED)
-                    # TODO: Make sure this does in fact result in "Crystal Quarry" type frame for TMP and JUD duals like "Caldera Lake" and "Riftstone Portal"
-                    left_half = pinlines[0]
-                    right_half = pinlines[1]
+                    # Colorless lands (post-USG style) -- Examples: Crystal Quarry (ODY)
                     layers_to_unhide.append((land, wholes, land))
                     groups_to_unhide.append((neutral_land_frame_color, wholes, land))
-                    groups_to_unhide.append((left_half, halves, land))
-                    groups_to_unhide.append((right_half, wholes, land))
-                    groups_to_unhide.append((thicker_bevels_rules_box, modifications, land))
-                    layers_to_unhide.append((thicker_trim_stroke, modifications, land))
-
-            elif is_mono and cardname != "Phyrexian Tower":
-                    # Monocolored lands with colored rules box -- Examples: Rushwood Grove (MMQ), Spawning Pool (ULG)
-                    # Phyrexian Tower is excluded because it has the colorless land frame despite producing only black mana (not sure why).
-                    # TODO: Test to make sure phyrex does indeed render with the colorless land frame
-                    layers_to_unhide.append((land, wholes, land))
-                    groups_to_unhide.append((neutral_land_frame_color, wholes, land))
-                    groups_to_unhide.append((pinlines, wholes, land))
-                    groups_to_unhide.append((thicker_bevels_rules_box, modifications, land))
                     layers_to_unhide.append((thickest_trim_stroke, modifications, land))
-                    if setcode in ["5ED", "USG"]:
-                        # Monocolored lands with colored rules box and YELLOW TRIM -- Examples: Hollow Trees (5ED)
-                        layers_to_unhide.append(("Trim 5ED-USG", modifications, land))
-                        if pinlines == "W":
-                            layers_to_unhide.append(("W - Color Correction - 5ED-USG", pinlines, wholes, land))
 
             else:
                 # Colorless lands (post-USG style) -- Examples: Crystal Quarry (ODY)
@@ -1448,4 +1463,5 @@ class AncientTemplate (temp.NormalClassicTemplate):
                         sback = self.layout.background
                         # Use a slightly more pink version of the red frame, or softer version of the white frame
                         psd.getLayer("LEA", ("Nonland", sback, "Real-93")).visible = True
+
         art_position_memory(self)
