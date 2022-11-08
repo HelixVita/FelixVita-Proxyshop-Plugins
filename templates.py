@@ -160,6 +160,15 @@ def decision_to_memorize_new_art_position(self):
     if  user_input == "auto":
         return decision_to_enable_art_position_memory(self) and not self.current_art_pos_entry_exists
 
+def decision_to_autoalign_art_position(self):
+    user_input = config_json['Global']['art_position_autoalign']
+    if isinstance(user_input, bool):
+        return user_input
+    if  user_input == "auto":
+        art_file = Path(self.layout.file)
+        hq_art_file = art_file.parent / "autoalign" / art_file.name
+        return hq_art_file.exists()
+
 def decision_to_use_premium_star_between_set_and_lang(self, layout):
     user_input = self.config_json['Normal']['use_premium_star_between_set_and_lang']
     if isinstance(user_input, bool):
@@ -356,7 +365,7 @@ def felix_set_symbol_logic(self):
                     if not cfg.dev_mode: console.update("CCGHQ SVG failed to load. Defaulting to regular Proxyshop approach...")
                     pass
             else:
-                # frame_set_symbol_layer(self, expansion_symbol)
+                # frame_set_symbol_layer(expansion_symbol)
                 apply_set_specific_keyrune_symbol_adjustments(self, expansion_symbol)
 
 def load_symbol_svg(self, no_rarity: bool = False, timeshifted: bool = False):
@@ -608,11 +617,14 @@ def tombstone_decision_matrix(self) -> bool:
         )
     return decision
 
-def art_position_memory(self):
+
+def load_art_position_memory_csv(self):
     if not decision_to_enable_art_position_memory(self):
         return
     # Find the CSV file or create it (plus folders) if it doesn't exist.
     csv_folder = "memorized-art-positions"
+    if decision_to_autoalign_art_position(self):
+        csv_folder = os.path.join("autoalign", "cache", csv_folder)
     csv_name = os.path.splitext(self.template_file_name.split('/')[-1])[0] + ".csv"
     csv_expected_path = os.path.join(os.path.dirname(self.layout.file), csv_folder, csv_name)
     csv_exists = os.path.exists(csv_expected_path)
@@ -645,11 +657,17 @@ def art_position_memory(self):
         console.update("Deleting duplicate entries...")
         for idx in sorted(duplicate_csv_entries, reverse=True):
             del self.art_pos_data[idx]
+    self.current_art_pos = current_art_pos
+    self.art_post_csv_path = csv_expected_path
+
+def art_position_memory(self):
+    if not decision_to_enable_art_position_memory(self):
+        return
     # Use the retrieved art position to align & resize the art layer. Note: This does not support 'stretching' art (as in changing its aspect ratio).
     if self.current_art_pos_entry_exists:
         console.update("Aligning & resizing art using memorized values from CSV (no stretching)...")
-        x,y,w,h = current_art_pos
-        layer = self.art_layer
+        x,y,w,h = self.current_art_pos
+        layer = self.art_layer if not hasattr(self, "autoaligned_art_layer") else self.autoaligned_art_layer
         anchor = ps.AnchorPosition.TopLeft
         layer_dim = psd.get_layer_dimensions(layer)
         ref_dim = dict(zip(('width', 'height'), (w, h)))
@@ -662,14 +680,16 @@ def art_position_memory(self):
         console.update("No memorized art position found. (To memorize new positions, you must enable the option 'art_position_memorize_new' in config.json).")
 
     if decision_to_memorize_new_art_position(self) and not cfg.dev_mode:
+        csv_expected_path = self.art_post_csv_path
+        art_layer = self.art_layer if not hasattr(self, "autoaligned_art_layer") else self.autoaligned_art_layer
         # Set art layer to be the active layer, because this this will now make it super quick to detect if an image does not fully fill the frame (if you have "Show Transform Controls" enabled)
-        app.activeDocument.activeLayer = self.art_layer
+        app.activeDocument.activeLayer = art_layer
         # Trigger a manual edit mode
         console.wait("New memorization of art positions is enabled. Please make your adjustments, then click continue...")
         console.update(f"Saving art position to memorized-art-positions/{Path(csv_expected_path).name} in same folder as your art...")
         # Update posData values based on current art position
-        new_x, new_y = self.art_layer.bounds[:2]
-        new_w,new_h = tuple([psd.get_layer_dimensions(self.art_layer).get(key) for key in ['width', 'height']])
+        new_x, new_y = art_layer.bounds[:2]
+        new_w,new_h = tuple([psd.get_layer_dimensions(art_layer).get(key) for key in ['width', 'height']])
         updatedArtPos = {'filename': os.path.basename(self.layout.file), 'x': new_x, 'y': new_y, 'w': new_w, 'h': new_h}
         # Update the art_post_data var at the correct index
         if self.current_art_pos_entry_exists:
@@ -719,6 +739,98 @@ def felix_fix_unsupported_chars_in_artist_name(self):
 
 def felix_legendary_crown_logic(self):
     self.is_legendary = True if decision_to_have_legendary_crown(self) else False
+
+def art_load_autoalign_and_match(self):
+    """
+    This function loads an additional art file, and then auto-aligns it to existing art layer using Photoshop's Auto-Align Art action.
+    The intended use case is for using scryfall art as a positional reference for auto-aligning higher quality version of the same art downloaded from another source like mtgpics.
+    Why? Because scryfall art is sourced from real paper prints, meaning it is always perfectly aligned "by default", but this is usually not the case for HQ art, which is often sourced from artist portfolios and are therefore cropped differently (or not at all).
+    This function additionally does the following:
+    1. Perform "Content-Aware Fill" on the new art layer, because sometimes HQ art is actually cropped in such a way that it's missing some portion of the art which appears on the real card.
+    2. Perform "Match Color" on the HQ art layer, because the colors of HQ art are often not quite the same as the colors of the art on the real card.
+    3. Export the new art layer as a PNG file to a subfolder named 'cache' (inside the 'autoalign' folder), to save time on future renders.
+    4. If art position memorization is enabled in config.json, then the new art position will be saved in a CSV file in the 'cache' folder.
+    Note: This function is intended to be used in the enable_frame_layers() method of a template.
+    """
+    if not decision_to_autoalign_art_position(self):
+        return
+    console.update(f"Performing Felix's Auto-Align, Match Color, and CA-Fill...")
+    f = Path(self.layout.file)
+    autoalign_dir = f.parent / "autoalign"
+    img_path = autoalign_dir / f.name
+    cache_path = autoalign_dir / "cache"
+    cached_file = cache_path / f"{f.stem}.png"
+    cached_file = cached_file if os.path.exists(cached_file) else None
+    # Get the layers we need
+    art_frame = psd.getLayer("Art Frame")
+    layer1 = psd.getLayer("Layer 1")
+    # If the high-res art has already been processed, then use the cached version
+    if cached_file:
+        img_path = cached_file
+    # Load the high-res art as 'emb'
+    app.activeDocument.activeLayer = art_frame
+    emb = flx.place_embedded(str(img_path))
+    art_frame.visible = False
+    emb.rasterize(ps.RasterizeType.EntireLayer)
+    if decision_to_enable_art_position_memory(self) and self.current_art_pos_entry_exists:
+        self.autoaligned_art_layer = emb
+        return
+    # Make 'emb semi-transparent (purely for observational purposes)
+    app.activeDocument.activeLayer.opacity = 60
+    # Auto-align 'emb' to the scryfall art
+    psd.lock_layer(layer1)
+    flx.select_additional_layer(layer1)
+    flx.auto_align_layers()
+    # Select some other layer to get rid of the multi-layer selection
+    app.activeDocument.activeLayer = art_frame
+    app.activeDocument.activeLayer = emb
+    self.autoaligned_art_layer = emb
+    # Make high-res art fully opaque
+    app.activeDocument.activeLayer.opacity = 100
+    art_frame.visible = False
+    # All remaining steps have already been performed on cached versions, so return here if using a cached version
+    if cached_file:
+        return
+    # Perform color-matching of emb, using the scryfall art as a reference
+    app.activeDocument.activeLayer = emb
+    flx.match_color(layer1, neutralize = True)
+    psd.unlock_layer(layer1)
+    try:
+        # Obtain selection area for content-aware fill
+        psd.select_current_layer()
+        flx.add_selection(art_frame)
+        caf_area = psd.create_new_layer("CA-Fill Area (temp)")
+        app.activeDocument.selection.fill(app.foregroundColor)
+        psd.select_layer_bounds(caf_area)
+        caf_area.visible = False
+        flx.subtract_selection(emb)
+        app.activeDocument.selection.expand(5)
+        app.activeDocument.activeLayer = emb
+        # Content-aware fill any edge gaps in the high-res art
+        flx.content_aware_fill_current_selection()
+        app.activeDocument.selection.deselect()
+        # Trim edges of CAF'd emb
+        psd.select_layer_bounds(caf_area)
+        app.activeDocument.selection.invert()
+        app.activeDocument.selection.clear()
+        app.activeDocument.selection.deselect()
+    except:
+        console.update("Skipping CA-Fill.")
+    # Save layer to disk in a subfolder named 'cache' (to save time in future runs)
+    flx.duplicate_layer_into_new_document()
+    flx.trim_canvas_on_transparency()
+    options = ps.PNGSaveOptions()
+    doc = app.activeDocument
+    layer = app.activeDocument.activeLayer
+    if not os.path.exists(cache_path):
+        os.makedirs(cache_path)
+    image_path = os.path.join(cache_path, f"{layer.name}.png")
+    doc.saveAs(image_path, options=options, asCopy=True)
+    app.activeDocument.close(ps.SaveOptions.DoNotSaveChanges)
+    print("Breakpoint here")
+
+
+
 
 """
 HELPERS FOR SET-SPECIFIC SYMBOL ADJUSTMENTS
@@ -994,6 +1106,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
         import_custom_symbols_json(layout)
         cfg.flavor_divider = decision_to_use_flavor_divider(self, layout)
         super().__init__(layout)
+        load_art_position_memory_csv(self)
 
         # # For Portal sets, use bold rules text and flavor divider:
         # if layout.set.upper() in portal_frame_sets:
@@ -1114,6 +1227,9 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
 
     def enable_frame_layers(self):
+
+        art_load_autoalign_and_match(self)
+
         # Variables
         border_color = self.layout.scryfall['border_color']
         setcode = self.layout.set.upper()
