@@ -777,6 +777,7 @@ def felix_fix_unsupported_chars_in_artist_name(self):
     self.layout.artist = felix_fix_unsupported_chars(self.layout.artist)
 
 def felix_legendary_crown_logic(self):
+    # TODO: Refactor this as per closing comment in https://github.com/MrTeferi/MTG-Proxyshop/issues/18
     self.is_legendary = True if decision_to_use_legendary_crown(self) else False
 
 def art_load_autoalign_and_match(self):
@@ -1136,6 +1137,17 @@ class ModernTemplate (temp.NormalTemplate):
 class AncientTemplate (temp.NormalClassicTemplate):
     """
     FelixVita's template
+    # TODO: Add reverse sort option for scryfall scraping, a new feature in https://github.com/MrTeferi/MTG-Proxyshop/releases/tag/v1.1.9
+    # Additional New features in v1.1.9 which should be fixed/added:
+    # - Portal style frame, now that the divider spacing issue has been fixed
+    # - For Portal cards with no rules text, try MrTeferi's suggestion https://github.com/MrTeferi/MTG-Proxyshop/issues/26#issuecomment-1304591068, that is:
+    #   "Create a new reference box for this case, and create a post-text-layers() method, check for this case, then use the resize function and the
+    #    framing function to frame the text to that reference, and place your divider in the predefined position."
+    # TODO: Once v1.2.0 is out:
+    # - Fix centering of rules text on certain cards like "Prosperity" as per https://github.com/MrTeferi/MTG-Proxyshop/issues/30
+    # - Replace your own implementation of symbol resizing with the new built-in function as per https://github.com/MrTeferi/MTG-Proxyshop/pull/27
+    
+
     """
     template_file_name = "FelixVita/ancient.psd"
     template_suffix = "Ancient"
