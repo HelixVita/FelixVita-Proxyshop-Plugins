@@ -153,3 +153,10 @@ def trim_canvas_on_transparency():
     desc1.PutBoolean(sID("left"), True)
     desc1.PutBoolean(sID("right"), True)
     app.ExecuteAction(sID("trim"), desc1, NO_DIALOG)
+
+def auto_blend_layers():
+    desc3968 = ps.ActionDescriptor()
+    desc3968.PutEnumerated(sID("apply"), sID("autoBlendType"), sID("maxDOF"))
+    desc3968.PutBoolean(sID("colorCorrection"), True)
+    desc3968.PutBoolean(sID("autoTransparencyFill"), True)
+    app.ExecuteAction(sID("mergeAlignedLayers"), desc3968, NO_DIALOG)

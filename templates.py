@@ -810,30 +810,34 @@ def art_load_autoalign_and_match(self):
     # Load the high-res art as 'emb'
     app.activeDocument.activeLayer = art_frame
     emb = flx.place_embedded(str(img_path))
+    psd.frame_layer(emb, art_frame)
     art_frame.visible = False
     emb.rasterize(ps.RasterizeType.EntireLayer)
     if decision_to_enable_art_position_memory(self) and self.current_art_pos_entry_exists:
         self.autoaligned_art_layer = emb
         return
     # Make 'emb semi-transparent (purely for observational purposes)
-    app.activeDocument.activeLayer.opacity = 60
+    # app.activeDocument.activeLayer.opacity = 60
     # Auto-align 'emb' to the scryfall art
     psd.lock_layer(layer1)
     flx.select_additional_layer(layer1)
     flx.auto_align_layers()
+    # flx.auto_blend_layers()
+    # merged_layer = app.activeDocument.activeLayer
+    # app.activeDocument.selection.deselect()
     # Select some other layer to get rid of the multi-layer selection
     app.activeDocument.activeLayer = art_frame
     app.activeDocument.activeLayer = emb
     self.autoaligned_art_layer = emb
     # Make high-res art fully opaque
-    app.activeDocument.activeLayer.opacity = 100
-    art_frame.visible = False
+    # app.activeDocument.activeLayer.opacity = 100
+    # art_frame.visible = False
     # All remaining steps have already been performed on cached versions, so return here if using a cached version
     if cached_file:
         return
     # Perform color-matching of emb, using the scryfall art as a reference
     app.activeDocument.activeLayer = emb
-    flx.match_color(layer1, neutralize = True)
+    flx.match_color(layer1, fade = 35)
     psd.unlock_layer(layer1)
     try:
         # Obtain selection area for content-aware fill
@@ -856,8 +860,11 @@ def art_load_autoalign_and_match(self):
         app.activeDocument.selection.deselect()
     except:
         console.update("Skipping CA-Fill.")
+    art_frame.visible = False
+    console.wait("Check color match & ca-fill results, make any needed adjustments, select art layer and click Continue ...")
     # Save layer to disk in a subfolder named 'cache' (to save time in future runs)
     flx.duplicate_layer_into_new_document()
+    app.activeDocument.activeLayer.name = app.activeDocument.activeLayer.name.replace(" (merged)", "")
     flx.trim_canvas_on_transparency()
     options = ps.PNGSaveOptions()
     doc = app.activeDocument
@@ -1146,7 +1153,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
     # TODO: Once v1.2.0 is out:
     # - Fix centering of rules text on certain cards like "Prosperity" as per https://github.com/MrTeferi/MTG-Proxyshop/issues/30
     # - Replace your own implementation of symbol resizing with the new built-in function as per https://github.com/MrTeferi/MTG-Proxyshop/pull/27
-    
+
 
     """
     template_file_name = "FelixVita/ancient.psd"
@@ -1295,7 +1302,6 @@ class AncientTemplate (temp.NormalClassicTemplate):
 
     def enable_frame_layers(self):
 
-        art_load_autoalign_and_match(self)
 
         # Variables
         border_color = self.layout.scryfall['border_color']
@@ -1427,6 +1433,8 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 unhide(group, is_group=True)
             for layer in layers_to_unhide:
                 unhide(layer)
+
+        art_load_autoalign_and_match(self)
 
         # Basic text layers
         text_and_icons = psd.getLayerSet(con.layers['TEXT_AND_ICONS'])
