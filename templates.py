@@ -1452,7 +1452,7 @@ class AncientTemplate (temp.NormalClassicTemplate):
                 pt.textItem.size = 10
                 pt.translate(0, -30)
             # Shift the cardname slightly left
-            if not self.tombstone:
+            if not decision_to_use_tombstone_icon(self):
                 psd.getLayer("Card Name", "Text and Icons").translate(-100,0)
             # Color the white text grey for old cards
             if self.layout.set.upper() in pre_legends_sets:
