@@ -197,3 +197,4 @@ This option is specific to the _Ancient_ template, and has the following possibl
 - Investigamer — for creating and maintaining Proxyshop
 - lmonair — for the 1993 frame assets
 - Day7 — for hosting the most up-to-date dropbox repo of CCGHQ set symbol SVGs (linked in instructions, step 5)
+- Hathwellcrisping for beta testing, and improving appearance of the rules text box on the 1997 black nonland frame
